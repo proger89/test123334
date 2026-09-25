@@ -25,6 +25,14 @@ final class ScenarioCatalog
 
     public function publish(string $json, bool $ranked = false): void
     {
+        DB::transaction(function () use ($json, $ranked) {
+            DB::select('select pg_advisory_xact_lock(742619)');
+            $this->insertVersion($json, $ranked);
+        });
+    }
+
+    private function insertVersion(string $json, bool $ranked): void
+    {
         $s = Scenario::fromJson($json);
         $existing = DB::table('scenario_versions')->where('scenario', $s->id)->where('version', $s->version)->first();
         $hash = hash('sha256', $json);

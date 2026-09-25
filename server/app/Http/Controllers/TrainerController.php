@@ -38,6 +38,13 @@ final class TrainerController extends Controller
         return ['csrf' => csrf_token()] + $this->me($r);
     }
 
+    public function session(Request $request): array
+    {
+        $this->profile($request);
+
+        return ['csrf' => csrf_token()];
+    }
+
     public function me(Request $r): array
     {
         $id = $this->profile($r);
@@ -58,7 +65,9 @@ final class TrainerController extends Controller
         $result = [];
         foreach (DB::table('scenario_versions')->select('scenario')->distinct()->orderByDesc('scenario')->pluck('scenario') as $id) {
             $s = $this->catalog->get($id);
-            $result[] = ['id' => $s->id, 'title' => $s->title, 'intro' => $s->intro, 'version' => $s->version];
+            $check = $this->catalog->get($id, ranked: true);
+            $result[] = ['id' => $s->id, 'title' => $s->title, 'intro' => $s->intro, 'version' => $s->version,
+                'check' => ['title' => $check->title, 'intro' => $check->intro, 'version' => $check->version]];
         }
 
         return $result;
