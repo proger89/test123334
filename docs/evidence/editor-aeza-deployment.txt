@@ -1,0 +1,19 @@
+74229343dbbaf1a353caa1d9ae982a7f927d2027
+NAME                          IMAGE                                                                                        COMMAND                  SERVICE   CREATED              STATUS                    PORTS
+vsm-hackathon-demo-api-1      vsm-hackathon-api:local                                                                      "docker-php-entrypoi…"   api       About a minute ago   Up 57 seconds (healthy)   9000/tcp
+vsm-hackathon-demo-db-1       postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193   "docker-entrypoint.s…"   db        5 hours ago          Up 5 hours (healthy)      5432/tcp
+vsm-hackathon-demo-web-1      vsm-hackathon-demo-web                                                                       "/docker-entrypoint.…"   web       About a minute ago   Up 51 seconds (healthy)   0.0.0.0:80->80/tcp
+vsm-hackathon-demo-worker-1   vsm-hackathon-api:local                                                                      "docker-php-entrypoi…"   worker    About a minute ago   Up 57 seconds (healthy)   9000/tcp
+init-1  | 
+init-1  |    INFO  Running migrations.  
+init-1  | 
+init-1  |   2026_09_25_000004_scenario_editor ............................. 63.52ms DONE
+init-1  | 
+init-1  | Сценарии и демоданные готовы
+12
+8
+1
+{"ready":true}vsm-hackathon-demo-api-1 42MiB / 256MiB
+vsm-hackathon-demo-worker-1 32.48MiB / 96MiB
+vsm-hackathon-demo-web-1 4.641MiB / 64MiB
+vsm-hackathon-demo-db-1 21.29MiB / 160MiB
