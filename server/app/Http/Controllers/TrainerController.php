@@ -7,7 +7,10 @@ namespace App\Http\Controllers;
 use App\Game\AttemptService;
 use App\Game\Progress;
 use App\Game\ScenarioCatalog;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -53,19 +56,19 @@ final class TrainerController extends Controller
     public function scenarios(): array
     {
         $result = [];
-        foreach (DB::table('scenario_versions')->select('scenario')->distinct()->pluck('scenario') as $id) {
+        foreach (DB::table('scenario_versions')->select('scenario')->distinct()->orderByDesc('scenario')->pluck('scenario') as $id) {
             $s = $this->catalog->get($id);
             $result[] = ['id' => $s->id, 'title' => $s->title, 'intro' => $s->intro, 'version' => $s->version];
         }
 
-return $result;
+        return $result;
     }
 
     public function start(Request $r): array
     {
         $d = $r->validate(['scenario' => 'required|in:service,security', 'mode' => 'required|in:train,check', 'seat' => 'required|boolean']);
 
-        return $this->attempts->create($this->profile($r), $d['scenario'], $d['mode'], $d['seat']);
+        return $this->attempts->create($this->profile($r), $d['scenario'], $d['mode'], (bool) $d['seat']);
     }
 
     public function show(Request $r, string $id): array
@@ -73,15 +76,17 @@ return $result;
         return $this->attempts->load($this->profile($r), $id);
     }
 
-    public function command(Request $r, string $id, string $operation)
+    public function command(Request $r, string $id, string $operation): JsonResponse
     {
         abort_unless(in_array($operation, ['actions', 'pause', 'finish'], true), 404);
         $rules = ['request_id' => 'required|uuid', 'expected_revision' => 'required|integer|min:0'];
         if ($operation === 'actions') {
             $rules += ['thread_id' => 'required|string', 'action_id' => 'required|string'];
-        }if ($operation === 'pause') {
+        }
+        if ($operation === 'pause') {
             $rules += ['paused' => 'required|boolean'];
-        }$d = $r->validate($rules);
+        }
+        $d = $r->validate($rules);
         [$status,$body] = $this->attempts->command($this->profile($r), $id, $operation, $d);
 
         return response()->json($body, $status);
@@ -92,7 +97,7 @@ return $result;
         return $this->progress->summary($this->profile($r));
     }
 
-    public function notifications(Request $r)
+    public function notifications(Request $r): Collection
     {
         $id = $this->profile($r);
         $this->progress->syncNotifications($id);
@@ -110,7 +115,14 @@ return $result;
     public function join(Request $r): array
     {
         $id = $this->profile($r);
-        DB::table('challenge_entries')->insertOrIgnore(['profile_id' => $id, 'joined_at' => now(), 'expires_at' => now()->addDay()]);
+        DB::transaction(function () use ($id) {
+            DB::table('profiles')->where('id', $id)->lockForUpdate()->first();
+            DB::table('challenge_entries')->insertOrIgnore([
+                'profile_id' => $id,
+                'joined_at' => DB::raw('clock_timestamp()'),
+                'expires_at' => DB::raw("clock_timestamp() + interval '24 hours'"),
+            ]);
+        });
 
         return $this->progress->summary($id);
     }
@@ -122,7 +134,8 @@ return $result;
         $q = DB::table('profiles');
         if ($d['scope'] !== 'company') {
             $q->where($d['scope'], $me->{$d['scope']});
-        }$rows = [];
+        }
+        $rows = [];
         foreach ($q->get() as $p) {
             $points = (int) DB::table('best_results')->where('profile_id', $p->id)->sum('score');
             $bonus = (int) DB::table('bonuses')->where('profile_id', $p->id)->where('expires_at', '>', now())->sum('points');
@@ -135,18 +148,25 @@ return $result;
             $key = $row['total'].':'.$row['permanent'];
             if ($key !== $last) {
                 $rank = $i + 1;
-            }$row['rank'] = $rank;
+            }
+            $row['rank'] = $rank;
             $last = $key;
         }
 
-return $rows;
+        return $rows;
     }
 
-    public function export(Request $r)
+    public function export(Request $r): CursorPaginator
     {
         $token = $r->bearerToken();
         abort_unless($token && DB::table('integration_tokens')->where('hash', hash('sha256', $token))->where('scope', 'results:read')->where('expires_at', '>', now())->exists(), 401);
 
-        return DB::table('attempts')->where('status','completed')->select('id','profile_id','scenario','version','mode','result','finished_at')->orderBy('id')->cursorPaginate(50);
+        return DB::table('attempts')->where('status', 'completed')
+            ->select('id', 'profile_id', 'scenario', 'version', 'mode', 'result', 'finished_at')
+            ->orderBy('id')->cursorPaginate(50)->through(function (object $row): object {
+                $row->result = json_decode($row->result, true, flags: JSON_THROW_ON_ERROR);
+
+                return $row;
+            });
     }
 }

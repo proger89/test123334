@@ -26,17 +26,6 @@ final class ScenarioCatalog
     public function publish(string $json, bool $ranked = false): void
     {
         $s = Scenario::fromJson($json);
-        foreach ($s->nodes as $node) {
-            foreach ($node['actions'] as $a) {
-                foreach (['id', 'label', 'explanation', 'source'] as $field) {
-                    if (! isset($a[$field])) {
-                        throw new \InvalidArgumentException("Отсутствует $field");
-                    }
-                }if (isset($a['next']) && ! isset($s->nodes[$a['next']]) && ! str_starts_with($a['next'], 'closed_')) {
-                    throw new \InvalidArgumentException('Неизвестный переход');
-                }
-            }
-        }
         $existing = DB::table('scenario_versions')->where('scenario', $s->id)->where('version', $s->version)->first();
         $hash = hash('sha256', $json);
         if ($existing) {
@@ -44,7 +33,7 @@ final class ScenarioCatalog
                 throw new \DomainException('Опубликованная версия неизменяема');
             }
 
-return;
+            return;
         }
         DB::table('scenario_versions')->insert(['scenario' => $s->id, 'version' => $s->version, 'definition' => $json, 'checksum' => $hash, 'ranked' => $ranked, 'created_at' => now(), 'updated_at' => now()]);
     }

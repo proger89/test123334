@@ -116,11 +116,21 @@ export async function api<T>(
       "X-CSRF-TOKEN": csrf,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+  }).catch(() => {
+    throw new ApiError('Нет связи с сервером. Проверьте соединение и повторите.');
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new ApiError(
-      data.error?.message || data.message || "Не удалось выполнить запрос",
+      response.status === 419
+        ? "Время сеанса истекло. Обновите страницу."
+        : response.status === 422
+          ? "Проверьте введённые данные. Имя должно содержать от 2 до 40 знаков."
+          : response.status === 429
+            ? "Слишком много запросов. Подождите немного и повторите."
+            : response.status >= 500
+              ? "Сервис временно недоступен. Попробуйте ещё раз."
+              : data.error?.message || "Не удалось выполнить запрос",
       data.state,
     );
   if (data.csrf) csrf = data.csrf;

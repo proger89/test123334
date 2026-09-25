@@ -8,8 +8,12 @@ if(!(Test-Path -LiteralPath '.env')) {
 }
 switch($Command){
  'start' { docker compose up --build -d --wait web worker }
- 'stop' { docker compose stop }
- 'dev' { docker compose up --build -d --wait web worker }
- 'test' { docker compose exec api php artisan test }
+ 'stop' { docker compose -f compose.yaml -f compose.dev.yaml stop }
+ 'dev' { docker compose -f compose.yaml -f compose.dev.yaml up --build -d --wait web worker frontend-dev }
+ 'test' {
+   docker compose build api
+   if($LASTEXITCODE -ne 0){throw 'Не удалось собрать приложение для проверки'}
+   docker compose -p vsm-hackathon-test -f compose.test.yaml run --rm tests
+ }
 }
 if($LASTEXITCODE -ne 0){throw "Docker command failed ($LASTEXITCODE)"}

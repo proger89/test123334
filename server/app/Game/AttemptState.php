@@ -6,7 +6,7 @@ namespace App\Game;
 
 final class AttemptState
 {
-    public string $status = 'active';
+    public AttemptStatus $status = AttemptStatus::Active;
 
     public int $revision = 0;
 
@@ -45,6 +45,11 @@ final class AttemptState
         $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
         $state = new self($data['mode'], $data['scenario'], $data['version']);
         foreach ($data as $key => $value) {
+            if ($key === 'status') {
+                $state->status = AttemptStatus::from($value);
+
+                continue;
+            }
             if (property_exists($state, $key)) {
                 $state->$key = $value;
             }

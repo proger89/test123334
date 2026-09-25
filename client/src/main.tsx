@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { GameScreen } from "./GameScreen";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   MessageCircle,
@@ -6,19 +7,10 @@ import {
   Trophy,
   Bell,
   GraduationCap,
-  ShieldCheck,
-  Heart,
-  Timer,
-  Plug,
-  BriefcaseBusiness,
   ChevronRight,
-  Lightbulb,
-  Pause,
   Play,
-  LogOut,
   CheckCircle,
   AlertTriangle,
-  User,
   ArrowLeft,
 } from "lucide-react";
 import {
@@ -33,12 +25,6 @@ import {
 } from "./api";
 import "./style.css";
 const img = (name: string) => "/graphics/crops/" + name + ".png";
-const threadName = (id: string) =>
-  id === "service"
-    ? "Розетка"
-    : id === "baggage"
-      ? "Багаж в проходе"
-      : "Багаж без владельца";
 function App() {
   const [me, setMe] = useState<Me | null>(null),
     [scenarios, setScenarios] = useState<Scenario[]>([]),
@@ -101,10 +87,11 @@ function App() {
       api<Attempt>("/attempts/" + attempt.id)
         .then((a) => {
           accept(a);
+          setError("");
           if (a.status === "completed") void refresh();
         })
         .catch((e) => setError(e.message));
-    }, 1500);
+    }, 1000);
     return () => clearInterval(id);
   }, [attempt?.id, attempt?.status]);
   useEffect(() => {
@@ -117,6 +104,53 @@ function App() {
         setRanks(await api<Rank[]>("/leaderboard?scope=" + scope));
     });
   }, [page, scope]);
+  useEffect(() => {
+    if (!me) return;
+    const id = setInterval(async () => {
+      try {
+        setNotices(await api<Notice[]>("/notifications"));
+        if (page === "progress")
+          setProgress(await api<Progress>("/me/progress"));
+        if (page === "ranking")
+          setRanks(await api<Rank[]>("/leaderboard?scope=" + scope));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Не удалось обновить данные");
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [me?.profile.id, page, scope]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [page, attempt?.id, attempt?.status]);
+  useEffect(() => {
+    if (!selected) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const modal = document.querySelector<HTMLElement>('[role="dialog"]');
+    const controls = () =>
+      Array.from(
+        modal?.querySelectorAll<HTMLElement>(
+          "button:not(:disabled),select,input",
+        ) || [],
+      );
+    controls()[0]?.focus();
+    const handle = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) setSelected(null);
+      if (event.key !== "Tab") return;
+      const items = controls();
+      if (event.shiftKey && document.activeElement === items[0]) {
+        event.preventDefault();
+        items.at(-1)?.focus();
+      } else if (!event.shiftKey && document.activeElement === items.at(-1)) {
+        event.preventDefault();
+        items[0]?.focus();
+      }
+    };
+    document.addEventListener("keydown", handle);
+    return () => {
+      document.removeEventListener("keydown", handle);
+      previous?.focus();
+    };
+  }, [selected, busy]);
   const start = () =>
     void run(async () => {
       if (!selected) return;
@@ -181,6 +215,7 @@ function App() {
             setPage("scenarios");
           }}
         >
+          <span className="brand-mark" aria-hidden="true" />
           Виртуальная смена
         </a>
         <span className="mode">
@@ -198,7 +233,11 @@ function App() {
             <Bell />
             {notices.some((n) => !n.read) && <i />}
           </button>
-          <button className="profile" onClick={() => setPage("profile")}>
+          <button
+            className="profile"
+            aria-label="Мой профиль"
+            onClick={() => setPage("profile")}
+          >
             <img src={img(me.profile.portrait)} />
             <span>{me.profile.name}</span>
             <ChevronRight size={16} />
@@ -283,168 +322,17 @@ function App() {
             </section>
           )}
           {page === "game" && attempt && !attempt.result && (
-            <div className="game">
-              <section className="dialogue">
-                <p className="breadcrumb">Сценарии / {attempt.title}</p>
-                <h1>
-                  {thread === "service"
-                    ? "Помогите пассажиру"
-                    : thread === "baggage"
-                      ? "Освободите проход"
-                      : "Оцените обстоятельства"}
-                </h1>
-                <div className="dialogue-scene">
-                  <img
-                    className="passenger"
-                    src={img("passenger_card")}
-                    alt="Пассажир"
-                  />
-                  <div className="speech">
-                    <strong>
-                      {thread === "service" ? "Пассажир" : "Текущая ситуация"}
-                    </strong>
-                    <p>{current?.text}</p>
-                  </div>
-                </div>
-                <h2>Ваше действие</h2>
-                {attempt.status === "paused" ? (
-                  <div className="paused">
-                    <Pause />
-                    Смена приостановлена
-                    <button
-                      className="primary"
-                      onClick={() => command("pause", { paused: false })}
-                    >
-                      Продолжить
-                    </button>
-                  </div>
-                ) : (
-                  <div className="actions">
-                    {current?.actions.map((a) => (
-                      <button
-                        disabled={busy}
-                        key={a.id}
-                        onClick={() =>
-                          command("actions", {
-                            thread_id: current.id,
-                            action_id: a.id,
-                          })
-                        }
-                      >
-                        {a.label}
-                        <ChevronRight size={20} />
-                      </button>
-                    ))}
-                    {current?.closed && (
-                      <p>
-                        Обращение завершено.{" "}
-                        {attempt.threads.some((t) => !t.closed)
-                          ? "Перейдите к другому обращению."
-                          : "Ожидайте развития ситуации."}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {hint && (
-                  <div className="hint">
-                    {thread === "service"
-                      ? "Извинитесь, проверьте допустимую альтернативу, сообщите начальнику поезда и инженеру. Вернитесь с подтверждённой информацией."
-                      : thread === "baggage"
-                        ? "Установите владельца. Вежливо объясните причину и укажите конкретное место для багажа."
-                        : "Не перемещайте бесхозную вещь. Предупредите пассажиров и сообщите начальнику поезда и транспортной безопасности."}
-                  </div>
-                )}
-                <div className="game-tools">
-                  {attempt.mode === "train" && (
-                    <>
-                      <button onClick={() => setHint(!hint)}>
-                        <Lightbulb />
-                        Подсказка
-                      </button>
-                      <button
-                        disabled={busy}
-                        onClick={() =>
-                          command("pause", {
-                            paused: attempt.status !== "paused",
-                          })
-                        }
-                      >
-                        {attempt.status === "paused" ? <Play /> : <Pause />}
-                        {attempt.status === "paused" ? "Продолжить" : "Пауза"}
-                      </button>
-                    </>
-                  )}
-                  <button
-                    className="exit"
-                    disabled={busy}
-                    onClick={() => command("finish")}
-                  >
-                    <LogOut size={18} />
-                    Завершить
-                  </button>
-                </div>
-              </section>
-              <aside>
-                <h3>Текущая ситуация</h3>
-                <img
-                  className="cabin"
-                  src={img("cabin_standard")}
-                  alt="Иллюстрация салона"
-                />
-                <h3>
-                  {attempt.threads.length > 1
-                    ? "Два обращения одновременно"
-                    : "Текущее обращение"}
-                </h3>
-                <div className="threads">
-                  {attempt.threads.map((t) => (
-                    <button
-                      key={t.id}
-                      className={current?.id === t.id ? "active" : ""}
-                      onClick={() => {
-                        setThread(t.id);
-                        setHint(false);
-                      }}
-                    >
-                      {t.id === "service" ? <Plug /> : <BriefcaseBusiness />}
-                      <span>
-                        <strong>{threadName(t.id)}</strong>
-                        <small>
-                          {t.closed ? "Завершено" : "Ожидает решения"}
-                        </small>
-                      </span>
-                      {t.closed && <CheckCircle size={16} />}
-                    </button>
-                  ))}
-                </div>
-                {seconds !== null && seconds !== undefined && (
-                  <div className="timer">
-                    <Timer size={32} />
-                    <b>00:{String(seconds).padStart(2, "0")}</b>
-                    <span>
-                      {attempt.scenario === "service"
-                        ? "Освободить проход"
-                        : "Сообщить ответственным"}
-                      <small>Срок идёт при переключении обращений</small>
-                    </span>
-                  </div>
-                )}
-                <h3>Показатели (текущие)</h3>
-                <Gauge
-                  label="Лояльность"
-                  value={attempt.loyalty}
-                  kind="loyalty"
-                />
-                <Gauge
-                  label="Безопасность"
-                  value={attempt.safety}
-                  kind="safety"
-                />
-                <p className="footnote">
-                  Учебная ситуация · время задано авторами тренажёра
-                </p>
-              </aside>
-            </div>
+            <GameScreen
+              attempt={attempt}
+              current={current}
+              thread={thread}
+              setThread={setThread}
+              busy={busy}
+              command={command}
+              hint={hint}
+              setHint={setHint}
+              seconds={seconds}
+            />
           )}
           {page === "game" && attempt?.result && (
             <section className="results">
@@ -482,7 +370,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <h2>Что получилось</h2>
+              <h2>Что получилось, а что стоит повторить</h2>
               <div className="checklist">
                 {Object.entries(attempt.result.rubric).map(([key, r]) => (
                   <p key={key}>
@@ -492,6 +380,9 @@ function App() {
                       <AlertTriangle className="orange" size={18} />
                     )}{" "}
                     {r.label}
+                    {attempt.result!.checks[key]
+                      ? " — выполнено"
+                      : " — стоит повторить"}
                   </p>
                 ))}
               </div>
@@ -503,8 +394,21 @@ function App() {
                     <h3>{e.action}</h3>
                     <p>{e.explanation}</p>
                     <small>
-                      {e.source} · Лояльность {e.loyalty} · Безопасность{" "}
-                      {e.safety}
+                      <a
+                        href={
+                          "/sources/situations.pdf#page=" +
+                          (e.source.includes("41")
+                            ? 16
+                            : e.source.includes("14")
+                              ? 7
+                              : 8)
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {e.source}
+                      </a>{" "}
+                      · Лояльность {e.loyalty} · Безопасность {e.safety}
                     </small>
                   </div>
                 </article>
@@ -777,7 +681,7 @@ function App() {
               </p>
               <small>Номер профиля: {me.profile.id}</small>
               <p className="footnote">
-                Профиль сохраняется в этом браузере. После очистки данных сайта
+                Профиль доступен в этом браузере. После очистки данных сайта или 30 дней без входа
                 восстановление не предусмотрено.
               </p>
             </section>
@@ -830,7 +734,7 @@ function App() {
               </label>
             )}
             <p className="footnote">
-              Таймер начнётся после запуска. Время и штрафы — настройки учебной
+              Срок появится вместе с задачей. Время и штрафы — настройки учебной
               модели.
             </p>
             <button disabled={busy} className="primary" onClick={start}>
@@ -841,26 +745,6 @@ function App() {
         </div>
       )}
     </>
-  );
-}
-function Gauge({
-  label,
-  value,
-  kind,
-}: {
-  label: string;
-  value: number;
-  kind: string;
-}) {
-  return (
-    <div className={"gauge " + kind}>
-      {kind === "loyalty" ? <Heart /> : <ShieldCheck />}
-      <div>
-        <b>{label}</b>
-        <progress max={100} value={value} />
-      </div>
-      <span>{value}/100</span>
-    </div>
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);

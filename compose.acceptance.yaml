@@ -1,0 +1,4 @@
+services:
+  web:
+    image: vsm-hackathon-web
+    ports: !override ['127.0.0.1:8181:80']

@@ -11,8 +11,12 @@ Artisan::command('vsm:seed', function () {
     DB::transaction(function () {
         DB::select('select pg_advisory_xact_lock(742619)');
         foreach (glob(env('CONTENT_PATH', base_path('../content')).'/*.json') as $file) {
-            app(ScenarioCatalog::class)->publish(file_get_contents($file), true);
-        }foreach ([['12', 'Москва', 70], ['13', 'Москва', 90], ['21', 'Санкт-Петербург', 95]] as $i => $seed) {
+            $json = file_get_contents($file);
+            $definition = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+            $ranked = in_array($definition['id'], ['service', 'security'], true) && $definition['version'] === '1';
+            app(ScenarioCatalog::class)->publish($json, $ranked);
+        }
+        foreach ([['12', 'Москва', 70], ['13', 'Москва', 90], ['21', 'Санкт-Петербург', 95]] as $i => $seed) {
             $id = '00000000-0000-4000-8000-'.str_pad((string) ($i + 1), 12, '0', STR_PAD_LEFT);
             DB::table('profiles')->insertOrIgnore(['id' => $id, 'name' => 'Демо-проводник '.($i + 1), 'brigade' => 'Бригада №'.$seed[0], 'depot' => $seed[1], 'demo' => true, 'created_at' => now(), 'updated_at' => now()]);
             DB::table('best_results')->insertOrIgnore(['profile_id' => $id, 'scenario' => 'service', 'score' => $seed[2], 'score_set' => 'vsm-hackathon-2026']);
@@ -25,6 +29,22 @@ Artisan::command('vsm:work', function () {
         app(AttemptService::class)->tick();
         sleep(1);
     }
+});
+Artisan::command('vsm:init', function () {
+    DB::select('select pg_advisory_lock(742618)');
+    try {
+        if ($this->call('migrate', ['--force' => true]) !== 0) {
+            return 1;
+        }
+
+        return $this->call('vsm:seed');
+    } finally {
+        DB::select('select pg_advisory_unlock(742618)');
+    }
+});
+Artisan::command('vsm:worker-health', function () {
+    return DB::table('worker_heartbeats')->where('id', 'main')
+        ->where('last_success', '>', now()->subSeconds(15))->exists() ? 0 : 1;
 });
 Artisan::command('scenario:publish {file}', function () {
     app(ScenarioCatalog::class)->publish(file_get_contents($this->argument('file')));

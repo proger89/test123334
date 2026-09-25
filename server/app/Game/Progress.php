@@ -18,10 +18,10 @@ final class Progress
         DB::table('awards')->insertOrIgnore(['profile_id' => $profile, 'code' => $code, 'title' => $title, 'created_at' => now(), 'updated_at' => now()]);
     }
 
-    public function record(string $profile, AttemptState $s, array $result): void
+    public function record(string $profile, AttemptState $s, AttemptResult $result): void
     {
         $this->award($profile, 'first', 'Первое завершение');
-        if ($s->mode !== 'check' || ! $result['passed']) {
+        if ($s->mode !== 'check' || ! $result->passed) {
             return;
         }
         $ranked = DB::table('scenario_versions')->where('scenario', $s->scenario)->where('version', $s->version)->value('ranked');
@@ -31,9 +31,9 @@ final class Progress
         $q = DB::table('best_results')->where('profile_id', $profile)->where('scenario', $s->scenario)->where('score_set', 'vsm-hackathon-2026');
         $old = $q->value('score');
         if ($old === null) {
-            DB::table('best_results')->insert(['profile_id' => $profile, 'scenario' => $s->scenario, 'score' => $result['score'], 'score_set' => 'vsm-hackathon-2026']);
-        } elseif ($result['score'] > $old) {
-            $q->update(['score' => $result['score']]);
+            DB::table('best_results')->insert(['profile_id' => $profile, 'scenario' => $s->scenario, 'score' => $result->score, 'score_set' => 'vsm-hackathon-2026']);
+        } elseif ($result->score > $old) {
+            $q->update(['score' => $result->score]);
         }
         if ($s->scenario === 'service' && ($s->checks['timely'] ?? false)) {
             $this->award($profile, 'service', 'Свободный проход');
@@ -45,7 +45,7 @@ final class Progress
             $this->award($profile, 'both', 'Две смены');
         }
         $entry = DB::table('challenge_entries')->where('profile_id', $profile)->first();
-        if (! $entry || $entry->completed_at || now()->gte($entry->expires_at)) {
+        if (! $entry || $entry->completed_at) {
             return;
         }
         $passed = DB::table('attempts')->where('profile_id', $profile)->where('mode', 'check')->where('version', '1')->where('finished_at', '>=', $entry->joined_at)->where('finished_at', '<', $entry->expires_at)->get()->filter(fn ($a) => json_decode($a->result ?? '{}', true)['passed'] ?? false)->pluck('scenario')->unique()->count();
@@ -73,13 +73,19 @@ final class Progress
         $permanent = (int) DB::table('best_results')->where('profile_id', $profile)->sum('score');
         $bonus = (int) DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->sum('points');
         $history = DB::table('attempts')->where('profile_id', $profile)->where('status', 'completed')->orderByDesc('finished_at')->limit(100)->get();
+        $observations = DB::query()->fromSub(
+            DB::table('attempts')->where('profile_id', $profile)->where('status', 'completed')
+                ->selectRaw('*, row_number() over (partition by scenario, version, mode order by finished_at desc, id desc) as observation_number'),
+            'observations'
+        )->where('observation_number', '<=', 5)->get();
         $competencies = [];
         $counts = [];
-        foreach ($history as $attempt) {
+        foreach ($observations as $attempt) {
             $key = $attempt->mode.':'.$attempt->scenario.':'.$attempt->version;
             if (($counts[$key] ?? 0) >= 5) {
                 continue;
-            }$counts[$key] = ($counts[$key] ?? 0) + 1;
+            }
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
             $r = json_decode($attempt->result, true);
             foreach ($r['competencies'] as $name => $c) {
                 $k = $key.':'.$name;
@@ -95,6 +101,6 @@ final class Progress
             $c['percent'] = $c['critical'] ? null : (int) round(100 * $c['passed'] / $c['total']);
         }
 
-        return ['permanent' => $permanent, 'bonus' => $bonus, 'total' => $permanent + $bonus, 'level' => $permanent >= 200 ? 4 : ($permanent >= 100 ? 3 : ($permanent >= 50 ? 2 : 1)), 'awards' => DB::table('awards')->where('profile_id', $profile)->get(), 'best' => DB::table('best_results')->where('profile_id', $profile)->get(), 'challenge' => DB::table('challenge_entries')->where('profile_id', $profile)->first(), 'bonuses' => DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get(), 'competencies' => array_values($competencies), 'history' => $history->map(fn ($a) => ['id' => $a->id, 'scenario' => $a->scenario, 'mode' => $a->mode, 'finished_at' => $a->finished_at, 'result' => json_decode($a->result,true)])];
+        return ['permanent' => $permanent, 'bonus' => $bonus, 'total' => $permanent + $bonus, 'level' => $permanent >= 200 ? 4 : ($permanent >= 100 ? 3 : ($permanent >= 50 ? 2 : 1)), 'awards' => DB::table('awards')->where('profile_id', $profile)->get(), 'best' => DB::table('best_results')->where('profile_id', $profile)->get(), 'challenge' => DB::table('challenge_entries')->where('profile_id', $profile)->first(), 'bonuses' => DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get(), 'competencies' => array_values($competencies), 'history' => $history->map(fn ($a) => ['id' => $a->id, 'scenario' => $a->scenario, 'mode' => $a->mode, 'finished_at' => $a->finished_at, 'result' => json_decode($a->result, true)])];
     }
 }

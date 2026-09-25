@@ -11,7 +11,7 @@ Route::get('/api/health/ready', function () {
     return ['ready' => true];
 });
 Route::get('/api/v1/integrations/results', [T::class, 'export']);
-Route::prefix('/api/v1')->middleware('throttle:120,1')->group(function () {
+Route::prefix('/api/v1')->middleware('throttle:trainer')->group(function () {
     Route::get('/bootstrap', [T::class, 'bootstrap'])->block();
     Route::get('/me', [T::class, 'me']);
     Route::patch('/me', [T::class, 'update']);

@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193
+    environment: {POSTGRES_DB: vsm_test, POSTGRES_USER: vsm, POSTGRES_PASSWORD: test_only}
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U vsm -d vsm_test']
+      interval: 2s
+      retries: 20
+  tests:
+    image: vsm-hackathon-api:local
+    env_file: .env
+    environment:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: vsm_test
+      DB_USERNAME: vsm
+      DB_PASSWORD: test_only
+      CONTENT_PATH: /var/www/content
+      SESSION_DRIVER: array
+      CACHE_STORE: array
+    depends_on:
+      db: {condition: service_healthy}
+    command: sh -c 'php artisan migrate --force && php artisan vsm:seed && php artisan test'

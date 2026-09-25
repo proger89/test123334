@@ -12,13 +12,14 @@ x-app: &app
     DB_DATABASE: vsm
     DB_USERNAME: vsm
     SESSION_DRIVER: database
+    SESSION_LIFETIME: 43200
     CACHE_STORE: database
     APP_DEBUG: 'false'
     LOG_CHANNEL: stderr
     CONTENT_PATH: /var/www/content
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193
     environment:
       POSTGRES_DB: vsm
       POSTGRES_USER: vsm
@@ -30,7 +31,7 @@ services:
       retries: 20
   init:
     <<: *app
-    command: sh -c 'php artisan migrate --force && php artisan vsm:seed'
+    command: php artisan vsm:init
     depends_on:
       db: {condition: service_healthy}
   api:
@@ -38,12 +39,20 @@ services:
     depends_on:
       init: {condition: service_completed_successfully}
     restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'SCRIPT_FILENAME=/var/www/html/public/index.php REQUEST_METHOD=GET REQUEST_URI=/api/health/ready cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q ''"ready":true''']
+      interval: 5s
+      retries: 10
   worker:
     <<: *app
     command: php artisan vsm:work
     depends_on:
       init: {condition: service_completed_successfully}
     restart: unless-stopped
+    healthcheck:
+      test: [CMD, php, artisan, 'vsm:worker-health']
+      interval: 5s
+      retries: 10
   web:
     build:
       context: .

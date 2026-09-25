@@ -80,11 +80,20 @@ header {
   gap: 25px;
 }
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   font-weight: 800;
   font-size: 24px;
   color: #102448;
   text-decoration: none;
   letter-spacing: -0.7px;
+}
+.brand-mark {
+  width: 75px;
+  height: 48px;
+  flex: none;
+  background: url('/graphics/selected-design.png') -30px -17px / 1487px 1058px no-repeat;
 }
 .mode {
   display: flex;
@@ -185,11 +194,12 @@ main {
   overflow: hidden;
 }
 .passenger {
-  width: 37%;
-  max-height: 340px;
-  object-fit: cover;
-  object-position: top;
-  background: #eef1f5;
+  width: 41%;
+  max-width: 300px;
+  height: 340px;
+  flex: none;
+  background: url('/graphics/selected-design.png') -285px -213px / 1487px 1058px no-repeat;
+  mask-image: linear-gradient(to right, #000 88%, transparent);
 }
 .speech {
   align-self: center;
@@ -259,6 +269,7 @@ aside {
   margin-bottom: 20px;
 }
 .threads {
+  margin-bottom: 20px;
   display: flex;
   gap: 8px;
 }
@@ -614,6 +625,11 @@ select {
   }
 }
 @media (max-width: 1100px) {
+  .passenger {
+    height: 235px;
+    max-width: 200px;
+    background: url('/graphics/selected-design.png') calc(50% + 207px) -147px / 1024px 729px no-repeat;
+  }
   header {
     padding: 0 18px;
     gap: 15px;
@@ -621,6 +637,7 @@ select {
   .brand {
     font-size: 20px;
   }
+  .brand-mark { display: none; }
   .layout {
     grid-template-columns: 75px 1fr;
   }
@@ -755,7 +772,8 @@ select {
     min-height: 190px;
   }
   .passenger {
-    max-height: 235px;
+    width: 37%;
+    height: 235px;
   }
   .speech {
     padding: 15px;
