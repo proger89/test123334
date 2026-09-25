@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Game;
 
+use App\Practice\PracticeCatalog;
+use App\Practice\PracticeContext;
+use App\Practice\PracticeRecommendation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class AttemptService
 {
-    public function __construct(private Engine $engine, private ScenarioCatalog $catalog, private Progress $progress) {}
+    public function __construct(private Engine $engine, private ScenarioCatalog $catalog, private Progress $progress, private PracticeCatalog $practice) {}
 
     public function clock(): float
     {
@@ -35,7 +38,79 @@ final class AttemptService
 
     private function view(string $id, AttemptState $state, Scenario $scenario): array
     {
-        return ['id' => $id, 'server_time' => $this->clock(), 'scenario' => $state->scenario, 'version' => $state->version] + $this->engine->view($state, $scenario);
+        $context = $state->practice;
+
+        return [
+            'id' => $id, 'server_time' => $this->clock(), 'scenario' => $state->scenario, 'version' => $state->version,
+            'practice' => $context === null ? null : [
+                'id' => $context->id, 'source_attempt_id' => $context->sourceAttemptId,
+                'before' => $context->before, 'intro' => $scenario->intro,
+                'completed_steps' => count(array_filter($state->events, fn ($e) => $e['action'] !== 'Время истекло')),
+            ],
+            'practice_options' => $this->practice->recommendations($state, $scenario),
+        ] + $this->engine->view($state, $scenario);
+    }
+
+    private function scenarioFor(AttemptState $state): Scenario
+    {
+        return $state->practice === null
+            ? $this->catalog->get($state->scenario, $state->version)
+            : Scenario::fromJson($state->practice->definition);
+    }
+
+    /** @return array{int,array} */
+    public function startPractice(string $profile, string $sourceId, string $exerciseId, string $requestId): array
+    {
+        return DB::transaction(function () use ($profile, $sourceId, $exerciseId, $requestId) {
+            DB::table('profiles')->where('id', $profile)->lockForUpdate()->first();
+            $hash = hash('sha256', 'practice:'.$sourceId.':'.$exerciseId);
+            $old = DB::table('processed_requests')->where('profile_id', $profile)->where('request_id', $requestId)->first();
+            if ($old) {
+                return $old->hash === $hash
+                    ? [$old->status, json_decode($old->response, true, flags: JSON_THROW_ON_ERROR)]
+                    : [409, ['error' => ['code' => 'idempotency_conflict', 'message' => 'Ключ уже использован']]];
+            }
+            $sourceRow = DB::table('attempts')->where('id', $sourceId)->where('profile_id', $profile)->lockForUpdate()->first();
+            abort_unless($sourceRow, 404);
+            $source = StoredAttempt::fromRow($sourceRow)->state;
+            $selected = null;
+            foreach ($this->practice->recommendations($source, $this->scenarioFor($source)) as $option) {
+                if ($option->id === $exerciseId) {
+                    $selected = $option;
+                }
+            }
+            if ($selected === null) {
+                $response = [409, ['error' => ['code' => 'practice_unavailable', 'message' => 'Это упражнение не рекомендовано по выбранной смене.']]];
+            } elseif (DB::table('attempts')->where('profile_id', $profile)->where('status', '!=', 'completed')->exists()) {
+                $response = [409, ['error' => ['code' => 'active_attempt', 'message' => 'Сначала завершите текущее прохождение. Его можно открыть в разделе «Сценарии».']]];
+            } else {
+                $response = [200, $this->createPractice($profile, $sourceId, $selected)];
+            }
+            [$status, $body] = $response;
+            DB::table('processed_requests')->insert(['profile_id' => $profile, 'request_id' => $requestId, 'hash' => $hash, 'status' => $status, 'response' => json_encode($body, JSON_THROW_ON_ERROR)]);
+
+            return $response;
+        });
+    }
+
+    private function createPractice(string $profile, string $sourceId, PracticeRecommendation $option): array
+    {
+        $definition = $this->practice->definition($option->id);
+        $scenario = Scenario::fromJson($definition);
+        $time = $this->clock();
+        $state = $scenario->initialState('train', false, $time);
+        $state->practice = new PracticeContext($option->id, $sourceId, $definition, $option->before);
+        if ($option->id === 'priority') {
+            $state->deadline = $time + $scenario->seconds;
+        }
+        $id = (string) Str::uuid();
+        DB::table('attempts')->insert([
+            'id' => $id, 'profile_id' => $profile, 'scenario' => $scenario->id, 'version' => $scenario->version,
+            'mode' => 'train', 'status' => $state->status->value, 'state' => $state->json(),
+            'practice_id' => $option->id, 'source_attempt_id' => $sourceId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return $this->view($id, $state, $scenario);
     }
 
     private function persist(StoredAttempt $row, AttemptState $s, Scenario $scenario): void
@@ -46,7 +121,9 @@ final class AttemptService
             $values['result'] = json_encode($r, JSON_THROW_ON_ERROR);
             $values['finished_at'] = DB::raw('clock_timestamp()');
             DB::table('attempts')->where('id', $row->id)->update($values);
-            $this->progress->record($row->profileId, $s, $r);
+            if ($s->practice === null) {
+                $this->progress->record($row->profileId, $s, $r);
+            }
 
             return;
         }
@@ -61,7 +138,7 @@ final class AttemptService
             abort_unless($row, 404);
             $row = StoredAttempt::fromRow($row);
             $s = $row->state;
-            $scenario = $this->catalog->get($s->scenario, $s->version);
+            $scenario = $this->scenarioFor($s);
             $this->engine->expire($s, $scenario, $this->clock());
             $this->persist($row, $s, $scenario);
 
@@ -85,7 +162,7 @@ final class AttemptService
             abort_unless($row, 404);
             $row = StoredAttempt::fromRow($row);
             $s = $row->state;
-            $scenario = $this->catalog->get($s->scenario, $s->version);
+            $scenario = $this->scenarioFor($s);
             $time = $this->clock();
             $this->engine->expire($s, $scenario, $time);
             $status = 200;

@@ -226,7 +226,10 @@
                       ]
                     }
                   ],
-                  "result": null
+                  "result": null,
+                  "practice": null,
+                  "practice_options": [],
+                  "last_decision": null
                 }
               }
             }
@@ -347,7 +350,10 @@
                       ]
                     }
                   ],
-                  "result": null
+                  "result": null,
+                  "practice": null,
+                  "practice_options": [],
+                  "last_decision": null
                 }
               }
             }
@@ -378,6 +384,137 @@
             }
           }
         ]
+      }
+    },
+    "/attempts/{id}/practice": {
+      "post": {
+        "summary": "Начать рекомендованное упражнение по завершённой собственной смене; только обучение, без наград",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000099",
+                  "scenario": "service",
+                  "version": "1",
+                  "title": "Сервис и свободный проход",
+                  "server_time": 1790348400,
+                  "mode": "train",
+                  "status": "active",
+                  "revision": 0,
+                  "loyalty": 60,
+                  "safety": 80,
+                  "deadline": null,
+                  "remaining": null,
+                  "threads": [
+                    {
+                      "id": "service",
+                      "text": "Розетка не работает.",
+                      "closed": false,
+                      "actions": [
+                        {
+                          "id": "apologize",
+                          "label": "Извиниться и проверить решение"
+                        }
+                      ]
+                    }
+                  ],
+                  "result": null,
+                  "practice": null,
+                  "practice_options": [],
+                  "last_decision": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Есть незавершённое прохождение, упражнение не рекомендовано или ключ использован с другими данными. Повтор с прежним request_id возвращает первоначальные статус и тело."
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "exercise_id": {
+                    "enum": [
+                      "priority",
+                      "communication",
+                      "unattended"
+                    ]
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "exercise_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/attempts/{id}/actions": {
@@ -417,7 +554,10 @@
                       ]
                     }
                   ],
-                  "result": null
+                  "result": null,
+                  "practice": null,
+                  "practice_options": [],
+                  "last_decision": null
                 }
               }
             }
@@ -486,7 +626,10 @@
                             ]
                           }
                         ],
-                        "result": null
+                        "result": null,
+                        "practice": null,
+                        "practice_options": [],
+                        "last_decision": null
                       }
                     }
                   },
@@ -602,7 +745,10 @@
                       ]
                     }
                   ],
-                  "result": null
+                  "result": null,
+                  "practice": null,
+                  "practice_options": [],
+                  "last_decision": null
                 }
               }
             }
@@ -671,7 +817,10 @@
                             ]
                           }
                         ],
-                        "result": null
+                        "result": null,
+                        "practice": null,
+                        "practice_options": [],
+                        "last_decision": null
                       }
                     }
                   },
@@ -781,7 +930,10 @@
                       ]
                     }
                   ],
-                  "result": null
+                  "result": null,
+                  "practice": null,
+                  "practice_options": [],
+                  "last_decision": null
                 }
               }
             }
@@ -850,7 +1002,10 @@
                             ]
                           }
                         ],
-                        "result": null
+                        "result": null,
+                        "practice": null,
+                        "practice_options": [],
+                        "last_decision": null
                       }
                     }
                   },
@@ -1532,6 +1687,32 @@
                 "type": "null"
               }
             ]
+          },
+          "practice": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PracticeContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "practice_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeRecommendation"
+            }
+          },
+          "last_decision": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionFeedback"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1548,7 +1729,10 @@
           "deadline",
           "remaining",
           "threads",
-          "result"
+          "result",
+          "practice",
+          "practice_options",
+          "last_decision"
         ],
         "additionalProperties": false
       },
@@ -1639,6 +1823,18 @@
             "items": {
               "type": "object"
             }
+          },
+          "practice_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeHistory"
+            }
+          },
+          "practice_focus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeFocus"
+            }
           }
         },
         "required": [
@@ -1651,7 +1847,9 @@
           "challenge",
           "bonuses",
           "competencies",
-          "history"
+          "history",
+          "practice_history",
+          "practice_focus"
         ],
         "additionalProperties": false
       },
@@ -1722,13 +1920,18 @@
           "target": {
             "type": "string",
             "minLength": 1
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
           "id",
           "title",
           "read",
-          "target"
+          "target",
+          "body"
         ],
         "additionalProperties": true
       },
@@ -1836,6 +2039,170 @@
           "next_cursor"
         ],
         "additionalProperties": true
+      },
+      "PracticeRecommendation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "before": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "reason",
+          "before"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeContext": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "before": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "intro": {
+            "type": "string",
+            "minLength": 1
+          },
+          "completed_steps": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "source_attempt_id",
+          "before",
+          "intro",
+          "completed_steps"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeFocus": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "misses": {
+            "type": "integer"
+          },
+          "observations": {
+            "type": "integer"
+          },
+          "source_attempt_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exercise_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "scenario",
+          "version",
+          "mode",
+          "misses",
+          "observations",
+          "source_attempt_id",
+          "exercise_id"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeHistory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "finished_at": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "passed",
+          "finished_at"
+        ],
+        "additionalProperties": false
+      },
+      "DecisionFeedback": {
+        "type": "object",
+        "properties": {
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "loyalty_change": {
+            "type": "integer"
+          },
+          "safety_change": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "explanation",
+          "loyalty_change",
+          "safety_change"
+        ],
+        "additionalProperties": false
       }
     },
     "securitySchemes": {

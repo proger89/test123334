@@ -20,6 +20,11 @@ export type Result = {
   competencies: Record<string, { percent: number | null; status: string }>;
 };
 export type Attempt = {
+  last_decision: {
+    explanation: string;
+    loyalty_change: number;
+    safety_change: number;
+  } | null;
   id: string;
   scenario: string;
   version: string;
@@ -39,13 +44,43 @@ export type Attempt = {
     actions: { id: string; label: string }[];
   }[];
   result: Result | null;
+  practice: {
+    id: string;
+    source_attempt_id: string;
+    before: string[];
+    intro: string;
+    completed_steps: number;
+  } | null;
+  practice_options: PracticeRecommendation[];
+};
+export type PracticeRecommendation = {
+  id: string;
+  title: string;
+  reason: string;
+  before: string[];
 };
 export type Progress = {
+  practice_focus: {
+    label: string;
+    scenario: string;
+    version: string;
+    mode: string;
+    misses: number;
+    observations: number;
+    source_attempt_id: string;
+    exercise_id: string | null;
+  }[];
+  practice_history: {
+    id: string;
+    title: string;
+    passed: boolean;
+    finished_at: string;
+  }[];
   permanent: number;
   bonus: number;
   total: number;
   level: number;
-  awards: { id: number; title: string }[];
+  awards: { id: number; title: string; created_at: string }[];
   challenge: { completed_at: string | null; expires_at: string } | null;
   bonuses: { id: number; source: string; points: number; expires_at: string }[];
   competencies: {
@@ -80,6 +115,7 @@ export type Me = {
 export type Notice = {
   id: number;
   title: string;
+  body: string;
   read: boolean;
   target: string;
 };
@@ -117,7 +153,9 @@ export async function api<T>(
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   }).catch(() => {
-    throw new ApiError('Нет связи с сервером. Проверьте соединение и повторите.');
+    throw new ApiError(
+      "Нет связи с сервером. Проверьте соединение и повторите.",
+    );
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
@@ -125,7 +163,9 @@ export async function api<T>(
       response.status === 419
         ? "Время сеанса истекло. Обновите страницу."
         : response.status === 422
-          ? "Проверьте введённые данные. Имя должно содержать от 2 до 40 знаков."
+          ? data.errors?.name
+            ? "Имя должно содержать от 2 до 40 знаков."
+            : "Проверьте введённые данные."
           : response.status === 429
             ? "Слишком много запросов. Подождите немного и повторите."
             : response.status >= 500

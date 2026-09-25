@@ -97,12 +97,29 @@ final class TrainerController extends Controller
         return $this->progress->summary($this->profile($r));
     }
 
+    public function practice(Request $r, string $id): JsonResponse
+    {
+        $data = $r->validate(['exercise_id' => 'required|in:priority,communication,unattended', 'request_id' => 'required|uuid']);
+        [$status, $body] = $this->attempts->startPractice($this->profile($r), $id, $data['exercise_id'], $data['request_id']);
+
+        return response()->json($body, $status);
+    }
+
     public function notifications(Request $r): Collection
     {
         $id = $this->profile($r);
         $this->progress->syncNotifications($id);
 
-        return DB::table('notifications')->where('profile_id', $id)->orderByDesc('id')->get();
+        return DB::table('notifications')->where('profile_id', $id)->orderByDesc('id')->get()->map(function (object $notice): object {
+            $notice->body = match (strtok($notice->event_key, ':')) {
+                'scenario' => 'Откройте список смен, чтобы выбрать обучение или проверку.',
+                'challenge' => 'После вступления пройдите обе проверки за 24 часа. Награда — 20 временных баллов на сутки.',
+                'bonus' => 'Временные баллы действуют до указанного срока. Основные баллы и уровень сохраняются. Подробности — в разделе «Прогресс».',
+                default => '',
+            };
+
+            return $notice;
+        });
     }
 
     public function read(Request $r, string $id): array
@@ -161,7 +178,7 @@ final class TrainerController extends Controller
         $token = $r->bearerToken();
         abort_unless($token && DB::table('integration_tokens')->where('hash', hash('sha256', $token))->where('scope', 'results:read')->where('expires_at', '>', now())->exists(), 401);
 
-        return DB::table('attempts')->where('status', 'completed')
+        return DB::table('attempts')->where('status', 'completed')->whereNull('practice_id')
             ->select('id', 'profile_id', 'scenario', 'version', 'mode', 'result', 'finished_at')
             ->orderBy('id')->cursorPaginate(50)->through(function (object $row): object {
                 $row->result = json_decode($row->result, true, flags: JSON_THROW_ON_ERROR);

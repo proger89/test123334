@@ -43,6 +43,18 @@ schemas={
  'Export':obj({'data':arr(obj({'id':string,'profile_id':string,'scenario':string,'version':string,'mode':string,'result':ref('Result'),'finished_at':string})),'next_cursor':{'type':['string','null']}},additional=True),
 }
 example={'id':'00000000-0000-4000-8000-000000000099','scenario':'service','version':'1','title':'Сервис и свободный проход','server_time':1790348400,'mode':'train','status':'active','revision':0,'loyalty':60,'safety':80,'deadline':None,'remaining':None,'threads':[{'id':'service','text':'Розетка не работает.','closed':False,'actions':[{'id':'apologize','label':'Извиниться и проверить решение'}]}],'result':None}
+schemas['PracticeRecommendation']=obj({'id':string,'title':string,'reason':string,'before':arr(string)})
+schemas['PracticeContext']=obj({'id':string,'source_attempt_id':string,'before':arr(string),'intro':string,'completed_steps':integer})
+schemas['PracticeFocus']=obj({'label':string,'scenario':string,'version':string,'mode':string,'misses':integer,'observations':integer,'source_attempt_id':{'type':['string','null']},'exercise_id':{'type':['string','null']}})
+schemas['PracticeHistory']=obj({'id':string,'title':string,'passed':boolean,'finished_at':string})
+schemas['DecisionFeedback']=obj({'explanation':string,'loyalty_change':integer,'safety_change':integer})
+schemas['Attempt']['properties'].update({'practice':{'oneOf':[ref('PracticeContext'),{'type':'null'}]},'practice_options':arr(ref('PracticeRecommendation')),'last_decision':{'oneOf':[ref('DecisionFeedback'),{'type':'null'}]}})
+schemas['Attempt']['required'] += ['practice','practice_options','last_decision']
+schemas['Progress']['properties'].update({'practice_history':arr(ref('PracticeHistory')),'practice_focus':arr(ref('PracticeFocus'))})
+schemas['Progress']['required'] += ['practice_history','practice_focus']
+schemas['Notice']['properties']['body']=string
+schemas['Notice']['required'].append('body')
+example.update({'practice':None,'practice_options':[],'last_decision':None})
 paths={}
 def endpoint(path,method,title,response,body=None,params=None,export=False,bootstrap=False):
  op={'summary':title,'responses':{'200':{'description':'Успешно','content':{'application/json':{'schema':response}}},'401':{'description':'Нет действующей сессии или ключа'},'404':{'description':'Запись отсутствует или принадлежит другому профилю'},'429':{'description':'Слишком много запросов'}},'security':[] if bootstrap else [{'ExportToken':[]}] if export else [{'Session':[]}]}
@@ -62,6 +74,8 @@ endpoint('/me','patch','Изменить имя и портрет',ref('Me'),obj
 endpoint('/scenarios','get','Последние учебные версии',arr(ref('Scenario')))
 endpoint('/attempts','post','Начать или вернуть незавершённую попытку',ref('Attempt'),obj({'scenario':{'enum':['service','security']},'mode':{'enum':['train','check']},'seat':boolean}))
 endpoint('/attempts/{id}','get','Состояние с обработанными сроками',ref('Attempt'))
+endpoint('/attempts/{id}/practice','post','Начать рекомендованное упражнение по завершённой собственной смене; только обучение, без наград',ref('Attempt'),obj({'request_id':{'type':'string','format':'uuid'},'exercise_id':{'enum':['priority','communication','unattended']}}))
+paths['/attempts/{id}/practice']['post']['responses']['409']={'description':'Есть незавершённое прохождение, упражнение не рекомендовано или ключ использован с другими данными. Повтор с прежним request_id возвращает первоначальные статус и тело.'}
 for operation,extra in [('actions',{'thread_id':string,'action_id':string}),('pause',{'paused':boolean}),('finish',{})]:
  endpoint('/attempts/{id}/'+operation,'post',{'actions':'Выбрать действие','pause':'Установить паузу','finish':'Завершить смену'}[operation],ref('Attempt'),obj({**schemas['Command']['properties'],**extra}))
 endpoint('/me/progress','get','Баллы, достижения и реальные прохождения',ref('Progress'))

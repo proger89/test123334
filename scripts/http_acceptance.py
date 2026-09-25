@@ -49,6 +49,31 @@ code,_,_=s.call('/attempts','POST',{'scenario':'security','mode':'check','seat':
 assert code==419;report['csrf_without_token']=code
 other=Session();assert other.call('/attempts/'+a['id'])[0]==404
 report['owner_isolation']=True
+
+# A repeated start must not create multiple exercises, even on independent connections.
+practice_session=Session();source=practice_session.start()
+code,source,_=practice_session.action(source,'move');assert code==200
+practice_key=str(uuid.uuid4())
+practice_body={'request_id':practice_key,'exercise_id':'unattended'}
+practice_url='/attempts/'+source['id']+'/practice'
+with pool.ThreadPoolExecutor(max_workers=10) as executor:
+    def duplicate_practice(_):
+        clone=object.__new__(Session);clone.jar=practice_session.jar;clone.csrf=practice_session.csrf
+        clone.client=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(clone.jar))
+        return clone.call(practice_url,'POST',practice_body)
+    started_practices=list(executor.map(duplicate_practice,range(10)))
+assert all(code==200 and body==started_practices[0][1] for code,body,_ in started_practices)
+assert practice_session.call(practice_url,'POST',practice_body,csrf=False)[0]==419
+practice=started_practices[0][1]
+for choice in ['notify','warn']:
+    code,practice,_=practice_session.call('/attempts/'+practice['id']+'/actions','POST',{'request_id':str(uuid.uuid4()),'expected_revision':practice['revision'],'thread_id':'practice','action_id':choice})
+    assert code==200,(code,practice)
+assert practice['result']['passed']
+practice_progress=practice_session.call('/me/progress')[1]
+assert practice_progress['permanent']==0 and len(practice_progress['practice_history'])==1
+assert practice_session.call('/attempts/'+source['id'])[1]['result']==source['result']
+report['concurrent_identical_practice_starts']=10
+report['practice_preserves_source_and_ranking']=True
 times=[]
 def session_run(_):
     session=Session();timings=[]
@@ -85,6 +110,7 @@ assert any('Скоро истекут' in n['title'] for n in notices)
 report['expiry_warning']=True
 time.sleep(max(0,92-(time.monotonic()-bonus_started)))
 assert bonus.call('/me/progress')[1]['bonus']==0
+assert any('баллов истёк' in n['title'] for n in bonus.call('/notifications')[1])
 report['real_90_second_bonus_expired']=True
 before=s.call('/me/progress')[1]
 subprocess.run(COMPOSE+['stop'],check=True,capture_output=True)

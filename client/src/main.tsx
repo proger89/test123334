@@ -1,4 +1,6 @@
 import { GameScreen } from "./GameScreen";
+import { requestId } from "./requestId";
+import { PracticeOptions, PracticeScreen } from "./PracticeScreen";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -83,16 +85,23 @@ function App() {
   }, []);
   useEffect(() => {
     if (!attempt || attempt.status === "completed") return;
+    let disposed = false;
     const id = setInterval(() => {
       api<Attempt>("/attempts/" + attempt.id)
         .then((a) => {
+          if (disposed) return;
           accept(a);
           setError("");
           if (a.status === "completed") void refresh();
         })
-        .catch((e) => setError(e.message));
+        .catch((e) => {
+          if (!disposed) setError(e.message);
+        });
     }, 1000);
-    return () => clearInterval(id);
+    return () => {
+      disposed = true;
+      clearInterval(id);
+    };
   }, [attempt?.id, attempt?.status]);
   useEffect(() => {
     if (!me) return;
@@ -172,7 +181,7 @@ function App() {
         "/attempts/" + attempt.id + "/" + op,
         "POST",
         {
-          request_id: crypto.randomUUID(),
+          request_id: requestId(),
           expected_revision: attempt.revision,
           ...body,
         },
@@ -181,11 +190,36 @@ function App() {
       setHint(false);
       if (a.status === "completed") await refresh();
     });
+  const openAttempt = (id: string) =>
+    void run(async () => {
+      setPage("game");
+      const next = await api<Attempt>("/attempts/" + id);
+      accept(next);
+      setThread(next.threads[0].id);
+      await refresh();
+    });
+  const startPractice = (sourceId: string, exerciseId: string) =>
+    void run(async () => {
+      setPage("game");
+      const next = await api<Attempt>(
+        "/attempts/" + sourceId + "/practice",
+        "POST",
+        {
+          exercise_id: exerciseId,
+          request_id: requestId(),
+        },
+      );
+      accept(next);
+      setThread(next.threads[0].id);
+      await refresh();
+    });
   const current =
     attempt?.threads.find((t) => t.id === thread) || attempt?.threads[0];
   const seconds =
     attempt?.deadline === null
-      ? attempt?.remaining
+      ? attempt.remaining === null
+        ? null
+        : Math.max(0, Math.ceil(attempt.remaining))
       : Math.max(
           0,
           Math.ceil((attempt?.deadline ?? 0) - (attempt?.server_time ?? 0)),
@@ -231,7 +265,16 @@ function App() {
             onClick={() => setPage("notifications")}
           >
             <Bell />
-            {notices.some((n) => !n.read) && <i />}
+            {notices.some((n) => !n.read) && (
+              <span
+                className="notice-count"
+                aria-label={
+                  "Непрочитанных: " + notices.filter((n) => !n.read).length
+                }
+              >
+                {notices.filter((n) => !n.read).length}
+              </span>
+            )}
           </button>
           <button
             className="profile"
@@ -281,10 +324,15 @@ function App() {
                 Практикуйтесь в рабочих ситуациях. Разбирайте ошибки и пробуйте
                 снова.
               </p>
-              {attempt && attempt.status !== "completed" && (
-                <button className="primary" onClick={() => setPage("game")}>
+              {(me.active_attempt ||
+                (attempt && attempt.status !== "completed")) && (
+                <button
+                  className="primary"
+                  disabled={busy}
+                  onClick={() => openAttempt(me.active_attempt || attempt!.id)}
+                >
                   <Play size={18} />
-                  Продолжить смену
+                  Продолжить прохождение
                 </button>
               )}
               <div className="scenario-list">
@@ -321,20 +369,44 @@ function App() {
               </p>
             </section>
           )}
-          {page === "game" && attempt && !attempt.result && (
-            <GameScreen
+          {page === "game" && attempt?.practice && (
+            <PracticeScreen
               attempt={attempt}
-              current={current}
-              thread={thread}
-              setThread={setThread}
               busy={busy}
-              command={command}
-              hint={hint}
-              setHint={setHint}
               seconds={seconds}
+              command={command}
+              openSource={() =>
+                openAttempt(attempt.practice!.source_attempt_id)
+              }
+              repeat={() =>
+                startPractice(
+                  attempt.practice!.source_attempt_id,
+                  attempt.practice!.id,
+                )
+              }
+              check={() => {
+                setMode("check");
+                setSelected(scenarios.find((s) => s.id === attempt.scenario)!);
+              }}
             />
           )}
-          {page === "game" && attempt?.result && (
+          {page === "game" &&
+            attempt &&
+            !attempt.practice &&
+            !attempt.result && (
+              <GameScreen
+                attempt={attempt}
+                current={current}
+                thread={thread}
+                setThread={setThread}
+                busy={busy}
+                command={command}
+                hint={hint}
+                setHint={setHint}
+                seconds={seconds}
+              />
+            )}
+          {page === "game" && attempt?.result && !attempt.practice && (
             <section className="results">
               <p className="eyebrow">
                 Разбор смены ·{" "}
@@ -370,6 +442,11 @@ function App() {
                   </div>
                 ))}
               </div>
+              <PracticeOptions
+                options={attempt.practice_options || []}
+                busy={busy}
+                start={(id) => startPractice(attempt.id, id)}
+              />
               <h2>Что получилось, а что стоит повторить</h2>
               <div className="checklist">
                 {Object.entries(attempt.result.rubric).map(([key, r]) => (
@@ -459,7 +536,12 @@ function App() {
                   progress.awards.map((a) => (
                     <div key={a.id}>
                       <Trophy />
-                      {a.title}
+                      <span>
+                        <strong>{a.title}</strong>
+                        <small>
+                          {new Date(a.created_at).toLocaleDateString("ru")}
+                        </small>
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -533,6 +615,57 @@ function App() {
                   </strong>
                 </article>
               ))}
+              {!!progress.practice_focus?.length && (
+                <section
+                  className="practice-options"
+                  aria-label="Темы для повторения"
+                >
+                  <h2>Что стоит повторить</h2>
+                  <p>
+                    Пять последних смен каждого вида, отдельно по режиму и
+                    версии. Ниже — пункты, которые чаще оставались
+                    невыполненными.
+                  </p>
+                  {progress.practice_focus.map((item, index) => (
+                    <article className="practice-focus" key={index}>
+                      <div>
+                        <h3>{item.label}</h3>
+                        <p>
+                          Не выполнено в {item.misses} из {item.observations}{" "}
+                          смен.
+                        </p>
+                        <small>
+                          {item.scenario === "service"
+                            ? "Сервис и свободный проход"
+                            : "Похожая вещь — другое решение"}{" "}
+                          · {item.mode === "check" ? "Проверка" : "Обучение"} ·
+                          версия {item.version}
+                        </small>
+                      </div>
+                      {item.exercise_id ? (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            startPractice(
+                              item.source_attempt_id,
+                              item.exercise_id!,
+                            )
+                          }
+                        >
+                          Отработать ошибку
+                        </button>
+                      ) : (
+                        <button
+                          disabled={busy}
+                          onClick={() => openAttempt(item.source_attempt_id)}
+                        >
+                          Открыть разбор
+                        </button>
+                      )}
+                    </article>
+                  ))}
+                </section>
+              )}
               <h2>История смен</h2>
               {progress.history.map((h) => (
                 <button
@@ -558,6 +691,33 @@ function App() {
                     {h.result.score}/100 ·{" "}
                     {h.result.passed ? "Зачёт" : "Незачёт"}
                   </b>
+                  <ChevronRight />
+                </button>
+              ))}
+              <h2>Короткие упражнения</h2>
+              <p className="muted">
+                Сохраняются отдельно. Не меняют оценки смен, компетенции и
+                рейтинг.
+              </p>
+              {!progress.practice_history?.length && (
+                <p>
+                  Упражнения появятся после отработки ошибок из разбора смены.
+                </p>
+              )}
+              {progress.practice_history?.map((item) => (
+                <button
+                  className="history"
+                  key={item.id}
+                  disabled={busy}
+                  onClick={() => openAttempt(item.id)}
+                >
+                  <span>
+                    {item.title}
+                    <small>
+                      {new Date(item.finished_at).toLocaleString("ru")}
+                    </small>
+                  </span>
+                  <b>{item.passed ? "Выполнено" : "Стоит повторить"}</b>
                   <ChevronRight />
                 </button>
               ))}
@@ -632,6 +792,7 @@ function App() {
                   <Bell />
                   <span>
                     {n.title}
+                    <small>{n.body}</small>
                     <small>{n.read ? "Прочитано" : "Новое"}</small>
                   </span>
                   <ChevronRight />
@@ -681,8 +842,8 @@ function App() {
               </p>
               <small>Номер профиля: {me.profile.id}</small>
               <p className="footnote">
-                Профиль доступен в этом браузере. После очистки данных сайта или 30 дней без входа
-                восстановление не предусмотрено.
+                Профиль доступен в этом браузере. После очистки данных сайта или
+                30 дней без входа восстановление не предусмотрено.
               </p>
             </section>
           )}

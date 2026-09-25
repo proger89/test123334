@@ -62,7 +62,10 @@ final class Engine
         if (! $scenario->criticalTimeout) {
             $s->loyalty = max(0, $s->loyalty - 5);
         }
-        $s->events[] = ['action' => 'Время истекло', 'explanation' => 'Учебный срок реакции пропущен. Секунды заданы авторами тренажёра, а не нормативом перевозчика.', 'source' => $scenario->criticalTimeout ? 'Ситуации на борту, №41' : 'Ситуации на борту, №14', 'loyalty' => $s->loyalty, 'safety' => $s->safety];
+        $explanation = 'Учебный срок '.$scenario->seconds.' секунд истёк. '.($scenario->criticalTimeout
+            ? 'Безопасность снизилась на 30. Следовало не трогать вещь и сообщить начальнику поезда и транспортной безопасности до окончания срока.'
+            : 'Безопасность снизилась на 25, лояльность — на 5. Следовало установить владельца и вежливо попросить убрать багаж в подходящее место до окончания срока.');
+        $s->events[] = ['action' => 'Время истекло', 'explanation' => $explanation.' Секунды заданы авторами тренажёра, а не нормативом перевозчика.', 'source' => $scenario->criticalTimeout ? 'Ситуации на борту, №41' : 'Ситуации на борту, №14', 'loyalty' => $s->loyalty, 'safety' => $s->safety];
         if ($scenario->criticalTimeout) {
             $s->critical = true;
             $s->status = AttemptStatus::Completed;
@@ -138,7 +141,8 @@ final class Engine
     public function result(AttemptState $s, Scenario $scenario): AttemptResult
     {
         $score = (int) round(100 * count(array_filter($s->checks)) / count($scenario->rubric));
-        $passed = $s->status === AttemptStatus::Completed && $s->reason === 'resolved' && ! $s->critical && $s->safety >= 80 && $score >= 70;
+        $requiredScore = $s->practice === null ? 70 : 100;
+        $passed = $s->status === AttemptStatus::Completed && $s->reason === 'resolved' && ! $s->critical && $s->safety >= 80 && $score >= $requiredScore;
         $competencies = [];
         foreach ($scenario->rubric as $id => $check) {
             $c = $check['competency'];
@@ -156,6 +160,13 @@ final class Engine
     public function view(AttemptState $s, Scenario $scenario): array
     {
         $threads = [];
+        $lastDecision = null;
+        if ($s->events !== []) {
+            $lastIndex = count($s->events) - 1;
+            $last = $s->events[$lastIndex];
+            $previous = $s->events[$lastIndex - 1] ?? ['loyalty' => 60, 'safety' => 80];
+            $lastDecision = ['explanation' => $last['explanation'], 'loyalty_change' => $last['loyalty'] - $previous['loyalty'], 'safety_change' => $last['safety'] - $previous['safety']];
+        }
         foreach ($s->threads as $thread => $node) {
             $n = $scenario->nodes[$node] ?? new ScenarioStep('Обращение завершено', []);
             $actions = [];
@@ -167,6 +178,6 @@ final class Engine
             $threads[] = ['id' => $thread, 'text' => $n->text, 'closed' => str_starts_with($node, 'closed_'), 'actions' => $actions];
         }
 
-        return ['status' => $s->status->value, 'mode' => $s->mode, 'revision' => $s->revision, 'loyalty' => $s->loyalty, 'safety' => $s->safety, 'deadline' => $s->deadline, 'remaining' => $s->remaining, 'threads' => $threads, 'title' => $scenario->title, 'result' => $s->status === AttemptStatus::Completed ? $this->result($s, $scenario)->jsonSerialize() : null];
+        return ['status' => $s->status->value, 'mode' => $s->mode, 'revision' => $s->revision, 'loyalty' => $s->loyalty, 'safety' => $s->safety, 'deadline' => $s->deadline, 'remaining' => $s->remaining, 'threads' => $threads, 'title' => $scenario->title, 'last_decision' => $lastDecision, 'result' => $s->status === AttemptStatus::Completed ? $this->result($s, $scenario)->jsonSerialize() : null];
     }
 }

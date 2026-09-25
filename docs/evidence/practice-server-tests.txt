@@ -1,0 +1,66 @@
+ Container vsm-hackathon-test-db-1 Running 
+ Container vsm-hackathon-test-db-1 Waiting 
+ Container vsm-hackathon-test-db-1 Healthy 
+ Container vsm-hackathon-test-tests-run-a1381631a05a Creating 
+ Container vsm-hackathon-test-tests-run-a1381631a05a Created 
+
+   INFO  Nothing to migrate.  
+
+Сценарии и демоданные готовы
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\EngineTest[39m
+  [32;1m✓[39;22m[90m [39m[90mreporting before checking seat is valid[39m[90m                             [39m [90m0.01s[39m  
+  [32;1m✓[39;22m[90m [39m[90munresolved conversation cannot pass[39m
+  [32;1m✓[39;22m[90m [39m[90mfalse promise has deferred consequence[39m
+  [32;1m✓[39;22m[90m [39m[90munknown executable content is rejected[39m
+  [32;1m✓[39;22m[90m [39m[90mcorrect service[39m
+  [32;1m✓[39;22m[90m [39m[90mno seat does not lose checks[39m
+  [32;1m✓[39;22m[90m [39m[90mlate baggage is not passed[39m
+  [32;1m✓[39;22m[90m [39m[90mrude action loses communication[39m
+  [32;1m✓[39;22m[90m [39m[90msecurity both orders[39m
+  [32;1m✓[39;22m[90m [39m[90msecurity timeout never displays positive safety[39m
+  [32;1m✓[39;22m[90m [39m[90mmoving unknown bag is critical[39m
+  [32;1m✓[39;22m[90m [39m[90mhidden event uses original schedule after late wakeup[39m
+  [32;1m✓[39;22m[90m [39m[90mno future rules in public state[39m
+  [32;1m✓[39;22m[90m [39m[90mstate round trip[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthe application returns a successful response[39m[90m                       [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PracticeTest[39m
+  [32;1m✓[39;22m[90m [39m[90mrecommendation is based on source and does not reveal future answer[39m[90m…[39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuccess preserves source score critical competency rewards and expo[39m[90m…[39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstart retry is exact and changed payload conflicts even after compl[39m[90m…[39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mother profile and unrecommended topic are rejected[39m[90m                  [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90monly one open attempt and practice cannot recommend itself[39m[90m          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpriority requires all steps and timeout is applied once[39m[90m             [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpause reload frozen definition and successful priority[39m[90m              [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcommunication wrong promise and unfinished source[39m[90m                   [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtc001 tc002 profile boundaries and saved identity[39m[90m                   [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtc015 client cannot change scores or unlock rewards[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmalformed resource ids are not found instead of database errors[39m[90m     [39m [90m0.02s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtc010 reward date and count survive duplicate completion[39m[90m            [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtc012 tc013 notifications are readable deduplicated and expire[39m[90m      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtc011 ranking scopes and order[39m[90m                                      [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtc017 frequent unmet criteria link to real source[39m[90m                   [39m [90m0.07s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TrainerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mexact duplicate returns identical response and no second effect[39m[90m     [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtimeout persists when command rejected[39m[90m                              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtraining never awards ranking points[39m[90m                                [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mrepeated check does not farm points[39m[90m                                 [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mchallenge counts only checks after join[39m[90m                             [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mbonus expiration does not depend on worker[39m[90m                          [39m [90m0.02s[39m  
+  [32;1m✓[39;22m[90m [39m[90mone open attempt per profile[39m[90m                                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mother profile cannot access attempt[39m[90m                                 [39m [90m0.02s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpause preserves hidden event and is idempotent[39m[90m                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpublished versions are immutable[39m[90m                                    [39m [90m0.02s[39m  
+  [32;1m✓[39;22m[90m [39m[90mexport requires scoped token[39m[90m                                        [39m [90m0.02s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnew version preserves existing attempt and ranked version[39m[90m           [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mbest scores increase only by difference[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcompetencies keep last five of each group beyond history limit[39m[90m      [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mchallenge uses completion time not later award processing time[39m[90m      [39m [90m0.13s[39m  
+
+  [90mTests:[39m    [32;1m45 passed[39;22m[90m (319 assertions)[39m
+  [90mDuration:[39m [39m1.79s[39m
+

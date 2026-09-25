@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Game;
 
+use App\Practice\PracticeContext;
+
 final class AttemptState
 {
     public AttemptStatus $status = AttemptStatus::Active;
@@ -38,6 +40,8 @@ final class AttemptState
 
     public ?string $reason = null;
 
+    public ?PracticeContext $practice = null;
+
     public function __construct(public string $mode, public string $scenario, public string $version) {}
 
     public static function restore(string $json): self
@@ -45,6 +49,11 @@ final class AttemptState
         $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
         $state = new self($data['mode'], $data['scenario'], $data['version']);
         foreach ($data as $key => $value) {
+            if ($key === 'practice') {
+                $state->practice = $value === null ? null : PracticeContext::restore($value);
+
+                continue;
+            }
             if ($key === 'status') {
                 $state->status = AttemptStatus::from($value);
 

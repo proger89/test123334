@@ -104,6 +104,17 @@ export function GameScreen({
             )}
           </div>
         )}
+        {attempt.last_decision && (
+          <div className="decision-feedback" aria-live="polite">
+            <p>{attempt.last_decision.explanation}</p>
+            <small>
+              Лояльность: {attempt.last_decision.loyalty_change > 0 ? "+" : ""}
+              {attempt.last_decision.loyalty_change} · Безопасность:{" "}
+              {attempt.last_decision.safety_change > 0 ? "+" : ""}
+              {attempt.last_decision.safety_change}
+            </small>
+          </div>
+        )}
         {hint && (
           <div className="hint">
             {thread === "service"

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Game;
 
+use App\Practice\PracticeCatalog;
+use App\Practice\PracticeFocus;
 use Illuminate\Support\Facades\DB;
 
 final class Progress
@@ -66,20 +68,29 @@ final class Progress
                 $this->notice($profile, 'bonus:'.$b->id, 'Скоро истекут '.$b->points.' временных баллов', 'progress');
             }
         }
+        foreach (DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '<=', now())->get() as $bonus) {
+            $key = 'bonus:'.$bonus->id;
+            $title = 'Срок '.$bonus->points.' временных баллов истёк';
+            $this->notice($profile, $key, $title, 'progress');
+            DB::table('notifications')->where('profile_id', $profile)->where('event_key', $key)
+                ->where('title', '!=', $title)->update(['title' => $title, 'read' => false, 'updated_at' => now()]);
+        }
     }
 
     public function summary(string $profile): array
     {
         $permanent = (int) DB::table('best_results')->where('profile_id', $profile)->sum('score');
         $bonus = (int) DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->sum('points');
-        $history = DB::table('attempts')->where('profile_id', $profile)->where('status', 'completed')->orderByDesc('finished_at')->limit(100)->get();
+        $history = DB::table('attempts')->where('profile_id', $profile)->whereNull('practice_id')->where('status', 'completed')->orderByDesc('finished_at')->limit(100)->get();
         $observations = DB::query()->fromSub(
-            DB::table('attempts')->where('profile_id', $profile)->where('status', 'completed')
+            DB::table('attempts')->where('profile_id', $profile)->whereNull('practice_id')->where('status', 'completed')
                 ->selectRaw('*, row_number() over (partition by scenario, version, mode order by finished_at desc, id desc) as observation_number'),
             'observations'
-        )->where('observation_number', '<=', 5)->get();
+        )->where('observation_number', '<=', 5)->orderByDesc('finished_at')->get();
         $competencies = [];
         $counts = [];
+        $focus = [];
+        $practiceCatalog = new PracticeCatalog;
         foreach ($observations as $attempt) {
             $key = $attempt->mode.':'.$attempt->scenario.':'.$attempt->version;
             if (($counts[$key] ?? 0) >= 5) {
@@ -87,6 +98,15 @@ final class Progress
             }
             $counts[$key] = ($counts[$key] ?? 0) + 1;
             $r = json_decode($attempt->result, true);
+            foreach ($r['rubric'] as $check => $rule) {
+                $focusKey = $key.':'.$check;
+                $entry = $focus[$focusKey] ??= new PracticeFocus($rule['label'], $attempt->scenario, $attempt->version, $attempt->mode, $practiceCatalog->exerciseForCheck($attempt->scenario, $check));
+                $entry->observations++;
+                if (! $r['checks'][$check]) {
+                    $entry->misses++;
+                    $entry->source_attempt_id ??= $attempt->id;
+                }
+            }
             foreach ($r['competencies'] as $name => $c) {
                 $k = $key.':'.$name;
                 $old = $competencies[$k] ?? ['scenario' => $attempt->scenario, 'version' => $attempt->version, 'mode' => $attempt->mode, 'name' => $name, 'total' => 0, 'passed' => 0, 'critical' => false, 'attempts' => 0];
@@ -101,6 +121,25 @@ final class Progress
             $c['percent'] = $c['critical'] ? null : (int) round(100 * $c['passed'] / $c['total']);
         }
 
-        return ['permanent' => $permanent, 'bonus' => $bonus, 'total' => $permanent + $bonus, 'level' => $permanent >= 200 ? 4 : ($permanent >= 100 ? 3 : ($permanent >= 50 ? 2 : 1)), 'awards' => DB::table('awards')->where('profile_id', $profile)->get(), 'best' => DB::table('best_results')->where('profile_id', $profile)->get(), 'challenge' => DB::table('challenge_entries')->where('profile_id', $profile)->first(), 'bonuses' => DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get(), 'competencies' => array_values($competencies), 'history' => $history->map(fn ($a) => ['id' => $a->id, 'scenario' => $a->scenario, 'mode' => $a->mode, 'finished_at' => $a->finished_at, 'result' => json_decode($a->result, true)])];
+        $practiceFocus = array_values(array_filter($focus, fn (PracticeFocus $item) => $item->misses > 0));
+        usort($practiceFocus, fn (PracticeFocus $a, PracticeFocus $b) => ($b->misses <=> $a->misses) ?: strcmp($a->label, $b->label));
+        $practiceFocus = array_slice($practiceFocus, 0, 5);
+
+        return ['permanent' => $permanent, 'bonus' => $bonus, 'total' => $permanent + $bonus, 'level' => $permanent >= 200 ? 4 : ($permanent >= 100 ? 3 : ($permanent >= 50 ? 2 : 1)), 'awards' => DB::table('awards')->where('profile_id', $profile)->get(), 'best' => DB::table('best_results')->where('profile_id', $profile)->get(), 'challenge' => DB::table('challenge_entries')->where('profile_id', $profile)->first(), 'bonuses' => DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get(), 'competencies' => array_values($competencies), 'practice_focus' => $practiceFocus, 'practice_history' => $this->practiceHistory($profile), 'history' => $history->map(fn ($a) => ['id' => $a->id, 'scenario' => $a->scenario, 'mode' => $a->mode, 'finished_at' => $a->finished_at, 'result' => json_decode($a->result, true)])];
+    }
+
+    /** @return list<array{id:string,title:string,passed:bool,finished_at:string}> */
+    private function practiceHistory(string $profile): array
+    {
+        return DB::table('attempts')->where('profile_id', $profile)->whereNotNull('practice_id')
+            ->where('status', 'completed')->orderByDesc('finished_at')->limit(30)->get()
+            ->map(function (object $row): array {
+                $state = AttemptState::restore($row->state);
+                $scenario = Scenario::fromJson($state->practice->definition);
+
+                return ['id' => $row->id, 'title' => $scenario->title,
+                    'passed' => json_decode($row->result, true, flags: JSON_THROW_ON_ERROR)['passed'],
+                    'finished_at' => $row->finished_at];
+            })->all();
     }
 }
