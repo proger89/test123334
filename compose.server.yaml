@@ -1,0 +1,22 @@
+services:
+  db:
+    restart: unless-stopped
+    mem_limit: 160m
+    command: [postgres, -c, shared_buffers=32MB, -c, max_connections=30]
+    logging: &logs
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+  api:
+    mem_limit: 256m
+    volumes: ['./infra/php-demo.conf:/usr/local/etc/php-fpm.d/zz-demo.conf:ro']
+    logging: *logs
+  worker:
+    mem_limit: 96m
+    logging: *logs
+  init:
+    logging: *logs
+  web:
+    ports: !override ['0.0.0.0:80:80']
+    restart: unless-stopped
+    mem_limit: 64m
+    logging: *logs
