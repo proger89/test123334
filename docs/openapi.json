@@ -1,0 +1,1853 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Виртуальная смена ВСМ",
+    "version": "4.1",
+    "description": "Все изменения выполняются в локальном тренажёре. POST-команды идемпотентны по request_id внутри профиля. Проверки используют закреплённые версии; seat в проверке всегда true. ExportToken выдаётся локальной командой integration:token на 24 часа, только чтение. Реальной интеграции с кадровыми системами нет."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8180/api/v1"
+    }
+  ],
+  "paths": {
+    "/bootstrap": {
+      "get": {
+        "summary": "Открыть гостевую сессию",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bootstrap"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": []
+      }
+    },
+    "/me": {
+      "get": {
+        "summary": "Профиль и прогресс",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Изменить имя и портрет",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  },
+                  "portrait": {
+                    "enum": [
+                      "conductor_card",
+                      "chief_card"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "portrait"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/scenarios": {
+      "get": {
+        "summary": "Последние учебные версии",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Scenario"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      }
+    },
+    "/attempts": {
+      "post": {
+        "summary": "Начать или вернуть незавершённую попытку",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000099",
+                  "scenario": "service",
+                  "version": "1",
+                  "title": "Сервис и свободный проход",
+                  "server_time": 1790348400,
+                  "mode": "train",
+                  "status": "active",
+                  "revision": 0,
+                  "loyalty": 60,
+                  "safety": 80,
+                  "deadline": null,
+                  "remaining": null,
+                  "threads": [
+                    {
+                      "id": "service",
+                      "text": "Розетка не работает.",
+                      "closed": false,
+                      "actions": [
+                        {
+                          "id": "apologize",
+                          "label": "Извиниться и проверить решение"
+                        }
+                      ]
+                    }
+                  ],
+                  "result": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scenario": {
+                    "enum": [
+                      "service",
+                      "security"
+                    ]
+                  },
+                  "mode": {
+                    "enum": [
+                      "train",
+                      "check"
+                    ]
+                  },
+                  "seat": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "scenario",
+                  "mode",
+                  "seat"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/attempts/{id}": {
+      "get": {
+        "summary": "Состояние с обработанными сроками",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000099",
+                  "scenario": "service",
+                  "version": "1",
+                  "title": "Сервис и свободный проход",
+                  "server_time": 1790348400,
+                  "mode": "train",
+                  "status": "active",
+                  "revision": 0,
+                  "loyalty": 60,
+                  "safety": 80,
+                  "deadline": null,
+                  "remaining": null,
+                  "threads": [
+                    {
+                      "id": "service",
+                      "text": "Розетка не работает.",
+                      "closed": false,
+                      "actions": [
+                        {
+                          "id": "apologize",
+                          "label": "Извиниться и проверить решение"
+                        }
+                      ]
+                    }
+                  ],
+                  "result": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/attempts/{id}/actions": {
+      "post": {
+        "summary": "Выбрать действие",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000099",
+                  "scenario": "service",
+                  "version": "1",
+                  "title": "Сервис и свободный проход",
+                  "server_time": 1790348400,
+                  "mode": "train",
+                  "status": "active",
+                  "revision": 0,
+                  "loyalty": 60,
+                  "safety": 80,
+                  "deadline": null,
+                  "remaining": null,
+                  "threads": [
+                    {
+                      "id": "service",
+                      "text": "Розетка не работает.",
+                      "closed": false,
+                      "actions": [
+                        {
+                          "id": "apologize",
+                          "label": "Извиниться и проверить решение"
+                        }
+                      ]
+                    }
+                  ],
+                  "result": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Изменилась ревизия, действие недоступно или request_id использован с другим содержимым. Истёкшие сроки сохранены. Для state_conflict передано новое state.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "revision": {
+                    "value": {
+                      "error": {
+                        "code": "state_conflict",
+                        "message": "Состояние обновилось. Повторите выбор."
+                      },
+                      "state": {
+                        "id": "00000000-0000-4000-8000-000000000099",
+                        "scenario": "service",
+                        "version": "1",
+                        "title": "Сервис и свободный проход",
+                        "server_time": 1790348400,
+                        "mode": "train",
+                        "status": "active",
+                        "revision": 0,
+                        "loyalty": 60,
+                        "safety": 80,
+                        "deadline": null,
+                        "remaining": null,
+                        "threads": [
+                          {
+                            "id": "service",
+                            "text": "Розетка не работает.",
+                            "closed": false,
+                            "actions": [
+                              {
+                                "id": "apologize",
+                                "label": "Извиниться и проверить решение"
+                              }
+                            ]
+                          }
+                        ],
+                        "result": null
+                      }
+                    }
+                  },
+                  "duplicate": {
+                    "value": {
+                      "error": {
+                        "code": "idempotency_conflict",
+                        "message": "Ключ уже использован"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "thread_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "expected_revision",
+                  "thread_id",
+                  "action_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attempts/{id}/pause": {
+      "post": {
+        "summary": "Установить паузу",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000099",
+                  "scenario": "service",
+                  "version": "1",
+                  "title": "Сервис и свободный проход",
+                  "server_time": 1790348400,
+                  "mode": "train",
+                  "status": "active",
+                  "revision": 0,
+                  "loyalty": 60,
+                  "safety": 80,
+                  "deadline": null,
+                  "remaining": null,
+                  "threads": [
+                    {
+                      "id": "service",
+                      "text": "Розетка не работает.",
+                      "closed": false,
+                      "actions": [
+                        {
+                          "id": "apologize",
+                          "label": "Извиниться и проверить решение"
+                        }
+                      ]
+                    }
+                  ],
+                  "result": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Изменилась ревизия, действие недоступно или request_id использован с другим содержимым. Истёкшие сроки сохранены. Для state_conflict передано новое state.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "revision": {
+                    "value": {
+                      "error": {
+                        "code": "state_conflict",
+                        "message": "Состояние обновилось. Повторите выбор."
+                      },
+                      "state": {
+                        "id": "00000000-0000-4000-8000-000000000099",
+                        "scenario": "service",
+                        "version": "1",
+                        "title": "Сервис и свободный проход",
+                        "server_time": 1790348400,
+                        "mode": "train",
+                        "status": "active",
+                        "revision": 0,
+                        "loyalty": 60,
+                        "safety": 80,
+                        "deadline": null,
+                        "remaining": null,
+                        "threads": [
+                          {
+                            "id": "service",
+                            "text": "Розетка не работает.",
+                            "closed": false,
+                            "actions": [
+                              {
+                                "id": "apologize",
+                                "label": "Извиниться и проверить решение"
+                              }
+                            ]
+                          }
+                        ],
+                        "result": null
+                      }
+                    }
+                  },
+                  "duplicate": {
+                    "value": {
+                      "error": {
+                        "code": "idempotency_conflict",
+                        "message": "Ключ уже использован"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "paused": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "expected_revision",
+                  "paused"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attempts/{id}/finish": {
+      "post": {
+        "summary": "Завершить смену",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000099",
+                  "scenario": "service",
+                  "version": "1",
+                  "title": "Сервис и свободный проход",
+                  "server_time": 1790348400,
+                  "mode": "train",
+                  "status": "active",
+                  "revision": 0,
+                  "loyalty": 60,
+                  "safety": 80,
+                  "deadline": null,
+                  "remaining": null,
+                  "threads": [
+                    {
+                      "id": "service",
+                      "text": "Розетка не работает.",
+                      "closed": false,
+                      "actions": [
+                        {
+                          "id": "apologize",
+                          "label": "Извиниться и проверить решение"
+                        }
+                      ]
+                    }
+                  ],
+                  "result": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Изменилась ревизия, действие недоступно или request_id использован с другим содержимым. Истёкшие сроки сохранены. Для state_conflict передано новое state.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "revision": {
+                    "value": {
+                      "error": {
+                        "code": "state_conflict",
+                        "message": "Состояние обновилось. Повторите выбор."
+                      },
+                      "state": {
+                        "id": "00000000-0000-4000-8000-000000000099",
+                        "scenario": "service",
+                        "version": "1",
+                        "title": "Сервис и свободный проход",
+                        "server_time": 1790348400,
+                        "mode": "train",
+                        "status": "active",
+                        "revision": 0,
+                        "loyalty": 60,
+                        "safety": 80,
+                        "deadline": null,
+                        "remaining": null,
+                        "threads": [
+                          {
+                            "id": "service",
+                            "text": "Розетка не работает.",
+                            "closed": false,
+                            "actions": [
+                              {
+                                "id": "apologize",
+                                "label": "Извиниться и проверить решение"
+                              }
+                            ]
+                          }
+                        ],
+                        "result": null
+                      }
+                    }
+                  },
+                  "duplicate": {
+                    "value": {
+                      "error": {
+                        "code": "idempotency_conflict",
+                        "message": "Ключ уже использован"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "expected_revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/progress": {
+      "get": {
+        "summary": "Баллы, достижения и реальные прохождения",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Progress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "summary": "Рейтинг выбранного подразделения",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Rank"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "brigade",
+                "depot",
+                "company"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "Уведомления профиля",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notice"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      }
+    },
+    "/notifications/{id}": {
+      "patch": {
+        "summary": "Отметить прочитанным",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/challenges/join": {
+      "post": {
+        "summary": "Вступить в испытание один раз",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Progress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/integrations/results": {
+      "get": {
+        "summary": "Экспорт для HR, LMS и учёта наград",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Export"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "ExportToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Scenario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "intro": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "intro",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "Command": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision"
+        ],
+        "additionalProperties": false
+      },
+      "Action": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "Thread": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "closed",
+          "actions"
+        ],
+        "additionalProperties": false
+      },
+      "Competency": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "passed": {
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "observed",
+              "critical_failure"
+            ]
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "total",
+          "passed",
+          "status",
+          "percent"
+        ],
+        "additionalProperties": false
+      },
+      "Decision": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "loyalty": {
+            "type": "integer"
+          },
+          "safety": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action",
+          "explanation",
+          "source",
+          "loyalty",
+          "safety"
+        ],
+        "additionalProperties": false
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "critical": {
+            "type": "boolean"
+          },
+          "checks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "rubric": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "competency": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "default": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "label",
+                "competency"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Decision"
+            }
+          },
+          "competencies": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Competency"
+            }
+          }
+        },
+        "required": [
+          "score",
+          "passed",
+          "critical",
+          "checks",
+          "rubric",
+          "events",
+          "competencies"
+        ],
+        "additionalProperties": false
+      },
+      "Attempt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "server_time": {
+            "type": "number"
+          },
+          "scenario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "train",
+              "check"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "paused",
+              "completed"
+            ]
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "loyalty": {
+            "type": "integer"
+          },
+          "safety": {
+            "type": "integer"
+          },
+          "deadline": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "remaining": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "threads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Thread"
+            }
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Result"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "server_time",
+          "scenario",
+          "version",
+          "title",
+          "mode",
+          "status",
+          "revision",
+          "loyalty",
+          "safety",
+          "deadline",
+          "remaining",
+          "threads",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "portrait": {
+            "type": "string",
+            "minLength": 1
+          },
+          "brigade": {
+            "type": "string",
+            "minLength": 1
+          },
+          "depot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "portrait",
+          "brigade",
+          "depot",
+          "demo"
+        ],
+        "additionalProperties": true
+      },
+      "Progress": {
+        "type": "object",
+        "properties": {
+          "permanent": {
+            "type": "integer"
+          },
+          "bonus": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "awards": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "best": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "challenge": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "bonuses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "competencies": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "permanent",
+          "bonus",
+          "total",
+          "level",
+          "awards",
+          "best",
+          "challenge",
+          "bonuses",
+          "competencies",
+          "history"
+        ],
+        "additionalProperties": false
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "active_attempt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "profile",
+          "progress",
+          "active_attempt"
+        ],
+        "additionalProperties": false
+      },
+      "Bootstrap": {
+        "type": "object",
+        "properties": {
+          "csrf": {
+            "type": "string",
+            "minLength": 1
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "active_attempt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "csrf",
+          "profile",
+          "progress",
+          "active_attempt"
+        ],
+        "additionalProperties": false
+      },
+      "Notice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "read",
+          "target"
+        ],
+        "additionalProperties": true
+      },
+      "Rank": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rank": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "permanent": {
+            "type": "integer"
+          },
+          "brigade": {
+            "type": "string",
+            "minLength": 1
+          },
+          "depot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "rank",
+          "total",
+          "permanent",
+          "brigade",
+          "depot",
+          "demo"
+        ],
+        "additionalProperties": false
+      },
+      "Export": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "profile_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "scenario": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mode": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "result": {
+                  "$ref": "#/components/schemas/Result"
+                },
+                "finished_at": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "id",
+                "profile_id",
+                "scenario",
+                "version",
+                "mode",
+                "result",
+                "finished_at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "securitySchemes": {
+      "Session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "vsm-session"
+      },
+      "ExportToken": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "concurrent_identical_commands": 10,
+  "csrf_without_token": 419,
+  "owner_isolation": true,
+  "action_requests": 90,
+  "concurrent_sessions": 10,
+  "p95_action_ms": 131.5,
+  "max_action_ms": 142.1,
+  "worker_recovery_after_deadline": true,
+  "expiry_warning": true,
+  "real_90_second_bonus_expired": true,
+  "restart_preserves_profile_and_progress": true
+}

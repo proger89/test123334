@@ -1,0 +1,48 @@
+ Container vsm-hackathon-test-db-1 Running
+ Container vsm-hackathon-test-db-1 Waiting
+ Container vsm-hackathon-test-db-1 Healthy
+ Container vsm-hackathon-test-tests-run-754a4f736d44 Creating
+ Container vsm-hackathon-test-tests-run-754a4f736d44 Created
+
+   INFO  Nothing to migrate.
+
+Сценарии и демоданные готовы
+
+   PASS  Tests\Unit\EngineTest
+  ✓ reporting before checking seat is valid                              0.01s
+  ✓ unresolved conversation cannot pass
+  ✓ false promise has deferred consequence
+  ✓ unknown executable content is rejected
+  ✓ correct service
+  ✓ no seat does not lose checks
+  ✓ late baggage is not passed
+  ✓ rude action loses communication
+  ✓ security both orders
+  ✓ security timeout never displays positive safety
+  ✓ moving unknown bag is critical
+  ✓ hidden event uses original schedule after late wakeup
+  ✓ no future rules in public state
+  ✓ state round trip
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                        0.09s
+
+   PASS  Tests\Feature\TrainerTest
+  ✓ exact duplicate returns identical response and no second effect      0.03s
+  ✓ timeout persists when command rejected                               0.02s
+  ✓ training never awards ranking points                                 0.04s
+  ✓ repeated check does not farm points                                  0.05s
+  ✓ challenge counts only checks after join                              0.14s
+  ✓ bonus expiration does not depend on worker                           0.02s
+  ✓ one open attempt per profile                                         0.02s
+  ✓ other profile cannot access attempt                                  0.02s
+  ✓ pause preserves hidden event and is idempotent                       0.03s
+  ✓ published versions are immutable                                     0.01s
+  ✓ export requires scoped token                                         0.02s
+  ✓ new version preserves existing attempt and ranked version            0.04s
+  ✓ best scores increase only by difference                              0.04s
+  ✓ competencies keep last five of each group beyond history limit       0.15s
+  ✓ challenge uses completion time not later award processing time       0.10s
+
+  Tests:    30 passed (144 assertions)
+  Duration: 0.93s

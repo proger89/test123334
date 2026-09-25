@@ -1,0 +1,15 @@
+
+Running 7 tests using 1 worker
+
+(node:42672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+first_useful_screen_ms=138
+  ok 1 client\tests\trainer.spec.ts:19:1 › две смены, сохранение, испытание, достижения и три рейтинга (21.9s)
+  ok 2 client\tests\trainer.spec.ts:56:1 › критическая ошибка, обучение, правильная проверка (889ms)
+  ok 3 client\tests\trainer.spec.ts:68:37 › экран 390 (660ms)
+  ok 4 client\tests\trainer.spec.ts:68:37 › экран 768 (715ms)
+  ok 5 client\tests\trainer.spec.ts:68:37 › экран 1366 (760ms)
+  ok 6 client\tests\trainer.spec.ts:81:1 › сравнение с макетом и клавиатура (573ms)
+  ok 7 client\tests\trainer.spec.ts:95:1 › понятное сообщение при потере связи и восстановление смены (2.6s)
+
+  7 passed (28.9s)
