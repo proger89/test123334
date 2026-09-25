@@ -1391,6 +1391,1154 @@
           }
         ]
       }
+    },
+    "/session": {
+      "get": {
+        "summary": "Получить актуальный CSRF-токен существующего профиля",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "csrf": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "csrf"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      }
+    },
+    "/editor/access": {
+      "get": {
+        "summary": "Проверить доступ к редактору",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "authorized": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "authorized"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      }
+    },
+    "/editor/login": {
+      "post": {
+        "summary": "Открыть доступ методиста на 8 часов",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "authorized": {
+                      "type": "boolean"
+                    },
+                    "csrf": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "authorized",
+                    "csrf"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/editor/logout": {
+      "post": {
+        "summary": "Закрыть доступ методиста",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "authorized": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "authorized"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/editor": {
+      "get": {
+        "summary": "Версии сценариев и собственные черновики",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "scenario": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "version": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "ranked": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "scenario",
+                          "version",
+                          "title",
+                          "ranked"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "drafts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "published_version": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "published_version"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "versions",
+                    "drafts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ]
+      }
+    },
+    "/editor/drafts": {
+      "post": {
+        "summary": "Создать копию опубликованной версии; request_id служит идентификатором черновика",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "scenario": {
+                    "enum": [
+                      "service",
+                      "security"
+                    ]
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "scenario",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/editor/drafts/{id}": {
+      "get": {
+        "summary": "Загрузить собственный черновик и ошибки проверки",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "Сохранить черновик по ожидаемой ревизии",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer"
+                  },
+                  "definition": {
+                    "type": "string",
+                    "maxLength": 150000,
+                    "description": "JSON в строке; пустые реплики и ошибочные переходы допустимы в черновике, но блокируют пробу и публикацию."
+                  }
+                },
+                "required": [
+                  "expected_revision",
+                  "definition"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editor/drafts/{id}/publish": {
+      "post": {
+        "summary": "Опубликовать сохранённую редакцию только для обучения; повтор возвращает ту же версию",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "expected_revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editor/drafts/{id}/preview": {
+      "post": {
+        "summary": "Начать отдельную пробу; заменяет предыдущую пробу автора",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer"
+                  },
+                  "seat": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "expected_revision",
+                  "seat"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editor/previews/{id}": {
+      "get": {
+        "summary": "Состояние пробы с обработкой сроков",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/editor/previews/{id}/actions": {
+      "post": {
+        "summary": "Команда пробного прохождения",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "thread_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "expected_revision",
+                  "thread_id",
+                  "action_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editor/previews/{id}/pause": {
+      "post": {
+        "summary": "Команда пробного прохождения",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "paused": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "expected_revision",
+                  "paused"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editor/previews/{id}/finish": {
+      "post": {
+        "summary": "Команда пробного прохождения",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Редакция изменилась, версия уже опубликована или ключ команды занят"
+          },
+          "403": {
+            "description": "Нет доступа методиста: неверный код, сеанс истёк или код изменён"
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "request_id",
+                  "expected_revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1413,6 +2561,29 @@
           "version": {
             "type": "string",
             "minLength": 1
+          },
+          "check": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "intro": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "title",
+              "intro",
+              "version"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -2201,6 +3372,285 @@
           "explanation",
           "loyalty_change",
           "safety_change"
+        ],
+        "additionalProperties": false
+      },
+      "Draft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "base_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "published_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "definition": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "enum": [
+                  "service",
+                  "security"
+                ]
+              },
+              "version": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "intro": {
+                "type": "string"
+              },
+              "seconds": {
+                "type": "integer"
+              },
+              "critical_timeout": {
+                "type": "boolean"
+              },
+              "initial": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "rubric": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "competency": {
+                      "type": "string"
+                    },
+                    "default": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "competency"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "nodes": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "explanation": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "next": {
+                            "type": "string"
+                          },
+                          "open": {
+                            "type": "string"
+                          },
+                          "loyalty": {
+                            "type": "integer"
+                          },
+                          "safety": {
+                            "type": "integer"
+                          },
+                          "when": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "boolean"
+                            }
+                          },
+                          "flags": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "boolean"
+                            }
+                          },
+                          "checks": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "boolean"
+                            }
+                          },
+                          "critical": {
+                            "type": "boolean"
+                          },
+                          "close_timer": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label",
+                          "explanation",
+                          "source"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "actions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "title",
+              "intro",
+              "seconds",
+              "critical_timeout",
+              "initial",
+              "rubric",
+              "nodes"
+            ],
+            "additionalProperties": false,
+            "$schema": "https://json-schema.org/draft/2020-12/schema"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "base_version",
+          "revision",
+          "published_version",
+          "definition",
+          "issues"
+        ],
+        "additionalProperties": false
+      },
+      "Preview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "server_time": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "train",
+              "check"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "paused",
+              "completed"
+            ]
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "loyalty": {
+            "type": "integer"
+          },
+          "safety": {
+            "type": "integer"
+          },
+          "deadline": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "remaining": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "threads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Thread"
+            }
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Result"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_decision": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionFeedback"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "server_time",
+          "title",
+          "mode",
+          "status",
+          "revision",
+          "loyalty",
+          "safety",
+          "deadline",
+          "remaining",
+          "threads",
+          "result",
+          "last_decision"
         ],
         "additionalProperties": false
       }

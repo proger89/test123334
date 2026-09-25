@@ -42,6 +42,7 @@ schemas={
  'Rank':obj({'id':string,'name':string,'rank':integer,'total':integer,'permanent':integer,'brigade':string,'depot':string,'demo':boolean}),
  'Export':obj({'data':arr(obj({'id':string,'profile_id':string,'scenario':string,'version':string,'mode':string,'result':ref('Result'),'finished_at':string})),'next_cursor':{'type':['string','null']}},additional=True),
 }
+schemas['Scenario']['properties']['check']=obj({k:string for k in ['title','intro','version']})
 example={'id':'00000000-0000-4000-8000-000000000099','scenario':'service','version':'1','title':'Сервис и свободный проход','server_time':1790348400,'mode':'train','status':'active','revision':0,'loyalty':60,'safety':80,'deadline':None,'remaining':None,'threads':[{'id':'service','text':'Розетка не работает.','closed':False,'actions':[{'id':'apologize','label':'Извиниться и проверить решение'}]}],'result':None}
 schemas['PracticeRecommendation']=obj({'id':string,'title':string,'reason':string,'before':arr(string)})
 schemas['PracticeContext']=obj({'id':string,'source_attempt_id':string,'before':arr(string),'intro':string,'completed_steps':integer})
@@ -84,5 +85,36 @@ endpoint('/notifications','get','Уведомления профиля',arr(ref(
 endpoint('/notifications/{id}','patch','Отметить прочитанным',obj({'ok':boolean}),obj({},[]))
 endpoint('/challenges/join','post','Вступить в испытание один раз',ref('Progress'),obj({},[]))
 endpoint('/integrations/results','get','Экспорт для HR, LMS и учёта наград',ref('Export'),params=[{'name':'cursor','in':'query','schema':string}],export=True)
+
+# Authoring endpoints use the same cookie/CSRF boundary plus an 8-hour methodist grant.
+import copy
+draft_schema=copy.deepcopy(schema)
+def relax_draft(value):
+ if isinstance(value,dict):
+  for key in ['minLength','minimum','maximum','minItems']: value.pop(key,None)
+  for child in value.values(): relax_draft(child)
+relax_draft(draft_schema)
+schemas['Draft']=obj({'id':string,'base_version':string,'revision':integer,'published_version':{'type':['string','null']},'definition':draft_schema,'issues':arr(string)})
+schemas['Preview']=obj({k:v for k,v in schemas['Attempt']['properties'].items() if k not in ['scenario','version','practice','practice_options']})
+endpoint('/session','get','Получить актуальный CSRF-токен существующего профиля',obj({'csrf':string}))
+endpoint('/editor/access','get','Проверить доступ к редактору',obj({'authorized':boolean}))
+endpoint('/editor/login','post','Открыть доступ методиста на 8 часов',obj({'authorized':boolean,'csrf':string}),obj({'code':{'type':'string','maxLength':128}}))
+endpoint('/editor/logout','post','Закрыть доступ методиста',obj({'authorized':boolean}),obj({},[]))
+endpoint('/editor','get','Версии сценариев и собственные черновики',obj({'versions':arr(obj({'scenario':string,'version':string,'title':string,'ranked':boolean})),'drafts':arr(obj({'id':string,'title':string,'published_version':{'type':['string','null']}}))}))
+endpoint('/editor/drafts','post','Создать копию опубликованной версии; request_id служит идентификатором черновика',ref('Draft'),obj({'request_id':{'type':'string','format':'uuid'},'scenario':{'enum':['service','security']},'version':string}))
+endpoint('/editor/drafts/{id}','get','Загрузить собственный черновик и ошибки проверки',ref('Draft'))
+endpoint('/editor/drafts/{id}','put','Сохранить черновик по ожидаемой ревизии',ref('Draft'),obj({'expected_revision':integer,'definition':{'type':'string','maxLength':150000,'description':'JSON в строке; пустые реплики и ошибочные переходы допустимы в черновике, но блокируют пробу и публикацию.'}}))
+endpoint('/editor/drafts/{id}/publish','post','Опубликовать сохранённую редакцию только для обучения; повтор возвращает ту же версию',ref('Draft'),obj({'expected_revision':integer}))
+endpoint('/editor/drafts/{id}/preview','post','Начать отдельную пробу; заменяет предыдущую пробу автора',ref('Preview'),obj({'expected_revision':integer,'seat':boolean}))
+endpoint('/editor/previews/{id}','get','Состояние пробы с обработкой сроков',ref('Preview'))
+for operation,extra in [('actions',{'thread_id':string,'action_id':string}),('pause',{'paused':boolean}),('finish',{})]:
+ endpoint('/editor/previews/{id}/'+operation,'post','Команда пробного прохождения',ref('Preview'),obj({**schemas['Command']['properties'],**extra}))
+for path,operations in paths.items():
+ if path.startswith('/editor'):
+  for operation in operations.values():
+   operation['responses']['403']={'description':'Нет доступа методиста: неверный код, сеанс истёк или код изменён'}
+   operation['responses']['409']={'description':'Редакция изменилась, версия уже опубликована или ключ команды занят'}
+   if 'requestBody' in operation:
+    operation['responses']['422']['content']['application/json']['example']={'error':{'message':'Есть шаги, до которых нельзя добраться. Добавьте переход или удалите лишний шаг.'}}
 api={'openapi':'3.1.0','info':{'title':'Виртуальная смена ВСМ','version':'4.1','description':'Все изменения выполняются в локальном тренажёре. POST-команды идемпотентны по request_id внутри профиля. Проверки используют закреплённые версии; seat в проверке всегда true. ExportToken выдаётся локальной командой integration:token на 24 часа, только чтение. Реальной интеграции с кадровыми системами нет.'},'servers':[{'url':'http://127.0.0.1:8180/api/v1'}],'paths':paths,'components':{'schemas':schemas,'securitySchemes':{'Session':{'type':'apiKey','in':'cookie','name':'vsm-session'},'ExportToken':{'type':'http','scheme':'bearer'}}}}
 (ROOT/'docs/openapi.json').write_text(json.dumps(api,ensure_ascii=False,indent=2),encoding='utf-8')
