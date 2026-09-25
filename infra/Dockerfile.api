@@ -1,0 +1,8 @@
+FROM php:8.4-fpm-bookworm
+RUN apt-get update && apt-get install -y libpq-dev libzip-dev libonig-dev libxml2-dev unzip git libfcgi-bin && docker-php-ext-install pdo_pgsql mbstring zip dom && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www/html
+COPY server/ .
+RUN composer install --no-interaction --prefer-dist --no-scripts && php artisan package:discover && chown -R www-data:www-data storage bootstrap/cache
+COPY content/ /var/www/content/
+CMD ["php-fpm"]

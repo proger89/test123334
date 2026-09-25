@@ -1,0 +1,58 @@
+name: vsm-hackathon
+x-app: &app
+  image: vsm-hackathon-api:local
+  build:
+    context: .
+    dockerfile: infra/Dockerfile.api
+  env_file: .env
+  environment:
+    DB_CONNECTION: pgsql
+    DB_HOST: db
+    DB_PORT: 5432
+    DB_DATABASE: vsm
+    DB_USERNAME: vsm
+    SESSION_DRIVER: database
+    CACHE_STORE: database
+    APP_DEBUG: 'false'
+    LOG_CHANNEL: stderr
+    CONTENT_PATH: /var/www/content
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vsm
+      POSTGRES_USER: vsm
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U vsm -d vsm']
+      interval: 3s
+      retries: 20
+  init:
+    <<: *app
+    command: sh -c 'php artisan migrate --force && php artisan vsm:seed'
+    depends_on:
+      db: {condition: service_healthy}
+  api:
+    <<: *app
+    depends_on:
+      init: {condition: service_completed_successfully}
+    restart: unless-stopped
+  worker:
+    <<: *app
+    command: php artisan vsm:work
+    depends_on:
+      init: {condition: service_completed_successfully}
+    restart: unless-stopped
+  web:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.web
+    ports: ['127.0.0.1:8180:80']
+    depends_on: [api]
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1/api/health/ready']
+      interval: 5s
+      retries: 20
+volumes:
+  pgdata:
