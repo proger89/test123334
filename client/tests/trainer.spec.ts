@@ -97,8 +97,8 @@ test('понятное сообщение при потере связи и во
   await start(page,'Сервис и свободный проход');
   await page.getByRole('button',{name:'Пауза',exact:true}).click();
   await context.setOffline(true);
-  await expect(page.getByText('Нет связи с сервером. Проверьте соединение и повторите.')).toBeVisible();
+  await expect(page.getByRole('status').filter({hasText:'Нет связи'})).toBeVisible();
   await context.setOffline(false);
-  await expect(page.getByText('Нет связи с сервером. Проверьте соединение и повторите.')).toHaveCount(0);
+  await expect(page.getByRole('status').filter({hasText:'Нет связи'})).toHaveCount(0);
   await expect(page.getByText('Смена приостановлена',{exact:false})).toBeVisible();
 });

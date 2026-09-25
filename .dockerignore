@@ -6,3 +6,5 @@ client/node_modules
 client/dist
 tmp
 runtime
+
+.editor-access.txt

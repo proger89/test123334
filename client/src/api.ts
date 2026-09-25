@@ -3,6 +3,7 @@ export type Scenario = {
   title: string;
   intro: string;
   version: string;
+  check?: { title: string; intro: string; version: string };
 };
 export type Result = {
   score: number;
@@ -142,9 +143,11 @@ export async function api<T>(
   path: string,
   method = "GET",
   body?: unknown,
+  refreshSession = true,
 ): Promise<T> {
   const response = await fetch("/api/v1" + path, {
     method,
+    signal: AbortSignal.timeout(15000),
     credentials: "same-origin",
     headers: {
       Accept: "application/json",
@@ -157,7 +160,14 @@ export async function api<T>(
       "Нет связи с сервером. Проверьте соединение и повторите.",
     );
   });
-  const data = await response.json().catch(() => ({}));
+  if (response.status === 419 && refreshSession) {
+    // CSRF rejection happens before a command executes. Retry its original body once.
+    await api<{ csrf: string }>("/session", "GET", undefined, false);
+    return api<T>(path, method, body, false);
+  }
+  const data = await response.json().catch(() => {
+    throw new ApiError("Сервер не ответил. Попробуйте ещё раз немного позже.");
+  });
   if (!response.ok)
     throw new ApiError(
       response.status === 419
@@ -165,12 +175,16 @@ export async function api<T>(
         : response.status === 422
           ? data.errors?.name
             ? "Имя должно содержать от 2 до 40 знаков."
-            : "Проверьте введённые данные."
-          : response.status === 429
-            ? "Слишком много запросов. Подождите немного и повторите."
-            : response.status >= 500
-              ? "Сервис временно недоступен. Попробуйте ещё раз."
-              : data.error?.message || "Не удалось выполнить запрос",
+            : data.error?.message || "Проверьте введённые данные."
+          : response.status === 401
+            ? "Сеанс завершён. Обновите страницу, чтобы войти снова."
+            : response.status === 403
+              ? "Доступ закрыт. Проверьте код или откройте редактор заново."
+              : response.status === 429
+                ? "Слишком много запросов. Подождите немного и повторите."
+                : response.status >= 500
+                  ? "Сервис временно недоступен. Попробуйте ещё раз."
+                  : data.error?.message || "Не удалось выполнить запрос",
       data.state,
     );
   if (data.csrf) csrf = data.csrf;

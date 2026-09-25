@@ -1,0 +1,247 @@
+.editor {
+  padding: 32px;
+  max-width: 1480px;
+  margin: auto;
+  color: #172b4a;
+}
+.editor h1 {
+  margin: 0 0 12px;
+}
+.editor h2 {
+  font-size: 22px;
+  margin: 0 0 16px;
+}
+.editor h3 {
+  font-size: 17px;
+  margin: 0;
+}
+.editor p {
+  line-height: 1.65;
+}
+.editor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.editor-row > div {
+  min-width: 0;
+}
+.editor-card {
+  background: #fff;
+  border: 1px solid #dce3ed;
+  border-radius: 14px;
+  padding: 24px;
+  margin: 20px 0;
+  min-width: 0;
+}
+.editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 16px 0;
+  min-width: 0;
+}
+.editor input,
+.editor textarea,
+.editor select {
+  width: 100%;
+  border: 1px solid #b7c5d8;
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  background: white;
+  color: #172b4a;
+  min-width: 0;
+}
+.editor textarea {
+  min-height: 90px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.editor input[type="number"] {
+  max-width: 170px;
+}
+.editor button {
+  min-height: 42px;
+}
+.editor button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.editor-login {
+  max-width: 540px;
+}
+.editor-library {
+  display: flex;
+  align-items: end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.editor-library label {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+}
+.editor-library > label:last-child {
+  flex-basis: 100%;
+}
+.editor-toolbar {
+  background: #eaf2fd;
+  border: 1px solid #b9d0f2;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.editor-toolbar .editor-row {
+  justify-content: flex-start;
+}
+.editor-success {
+  color: #176345;
+  background: #eaf7ee;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+.editor-fields {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.editor-workspace {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.editor-steps {
+  padding-top: 24px;
+  position: sticky;
+  top: 20px;
+  max-height: 85vh;
+  overflow: auto;
+}
+.editor-steps > button {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  width: 100%;
+  margin: 10px 0;
+  gap: 6px;
+  line-height: 1.5;
+}
+.editor-steps > button.active {
+  background: #eaf2fd;
+  border-color: #2468d4;
+  color: #164e9e;
+}
+.editor-steps small {
+  color: #596c86;
+}
+.editor-action {
+  border-top: 1px solid #dce3ed;
+  padding: 22px 0;
+}
+.editor-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.editor-action summary {
+  color: #155caa;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 15px 0;
+}
+.editor-choices {
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 14px 0;
+}
+.editor-choices label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  align-items: center;
+  font-weight: 400;
+}
+.editor .editor-check {
+  flex-direction: row;
+  align-items: center;
+  line-height: 1.5;
+}
+.editor-check input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.editor-confirm {
+  border: 2px solid #2468d4;
+}
+.editor-preview {
+  border-top: 2px solid #c6d8ef;
+  padding-top: 28px;
+}
+.editor-preview .actions {
+  padding: 0;
+}
+.editor-preview .actions button {
+  background: #f1f6ff;
+}
+.editor fieldset:disabled {
+  opacity: 0.8;
+}
+@media (max-width: 900px) {
+  .editor {
+    padding: 24px 16px;
+  }
+  .editor-workspace {
+    grid-template-columns: 1fr;
+  }
+  .editor-steps {
+    position: static;
+    max-height: 300px;
+  }
+  .editor-columns {
+    grid-template-columns: 1fr;
+  }
+  .editor-card {
+    padding: 18px;
+  }
+  .editor-choices label {
+    grid-template-columns: 1fr;
+  }
+  .editor-library label {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .editor-toolbar button {
+    flex: 1;
+  }
+  .editor h1 {
+    font-size: 26px;
+  }
+}
+.editor label {
+  max-width: none;
+}
+.editor input,
+.editor select {
+  margin-top: 0;
+}
+.editor textarea:focus-visible {
+  outline: 3px solid #1772ff;
+  outline-offset: 3px;
+}
+@media (min-width: 901px) {
+  .editor-toolbar {
+    position: sticky;
+    top: 12px;
+    z-index: 2;
+    box-shadow: 0 4px 14px #17314e12;
+  }
+}

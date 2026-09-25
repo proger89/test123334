@@ -1041,3 +1041,11 @@ select {
     margin-left: 0;
   }
 }
+@media (max-width: 768px) {
+  nav button {
+    flex-direction: column;
+    min-width: 0;
+    gap: 4px;
+    font-size: 12px;
+  }
+}

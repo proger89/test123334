@@ -6,6 +6,10 @@ if(!(Test-Path -LiteralPath '.env')) {
   $password=[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
   "APP_NAME=VSM`nAPP_ENV=local`nAPP_KEY=base64:$key`nAPP_URL=http://127.0.0.1:8180`nDB_PASSWORD=$password`nSESSION_SECURE_COOKIE=false" | Set-Content -Encoding utf8NoBOM .env
 }
+if(-not (Select-String -Path '.env' -Pattern '^EDITOR_ACCESS_CODE=' -Quiet)) {
+  $editorCode=[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
+  Add-Content -Encoding utf8NoBOM .env "EDITOR_ACCESS_CODE=$editorCode"
+}
 switch($Command){
  'start' { docker compose up --build -d --wait web worker }
  'stop' { docker compose -f compose.yaml -f compose.dev.yaml stop }

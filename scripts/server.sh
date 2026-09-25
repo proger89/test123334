@@ -11,6 +11,10 @@ if [[ ! -f .env ]]; then
     printf 'SESSION_SECURE_COOKIE=false\n'
   } > .env
 fi
+if ! grep -q '^EDITOR_ACCESS_CODE=' .env; then
+  umask 077
+  printf '\nEDITOR_ACCESS_CODE=%s\n' "$(openssl rand -hex 24)" >> .env
+fi
 compose=(docker compose -p vsm-hackathon-demo -f compose.yaml -f compose.server.yaml)
 case "${1:-start}" in
   start)

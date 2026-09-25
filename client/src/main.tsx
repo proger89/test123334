@@ -1,3 +1,5 @@
+import { EditorScreen } from "./editor/EditorScreen";
+import { poll } from "./poll";
 import { GameScreen } from "./GameScreen";
 import { requestId } from "./requestId";
 import { PracticeOptions, PracticeScreen } from "./PracticeScreen";
@@ -14,6 +16,7 @@ import {
   CheckCircle,
   AlertTriangle,
   ArrowLeft,
+  FilePenLine,
 } from "lucide-react";
 import {
   api,
@@ -30,7 +33,12 @@ const img = (name: string) => "/graphics/crops/" + name + ".png";
 function App() {
   const [me, setMe] = useState<Me | null>(null),
     [scenarios, setScenarios] = useState<Scenario[]>([]),
-    [page, setPage] = useState("scenarios"),
+    [page, setPageState] = useState(
+      location.hash === "#editor" ? "editor" : "scenarios",
+    ),
+    [editorDirty, setEditorDirty] = useState(false),
+    [noticeError, setNoticeError] = useState(""),
+    [gameError, setGameError] = useState(""),
     [attempt, setAttempt] = useState<Attempt | null>(null),
     [thread, setThread] = useState("service"),
     [mode, setMode] = useState<"train" | "check">("train"),
@@ -45,6 +53,21 @@ function App() {
     [hint, setHint] = useState(false),
     [name, setName] = useState(""),
     [portrait, setPortrait] = useState("conductor_card");
+  const setPage = (next: string) => {
+    if (
+      page === "editor" &&
+      next !== page &&
+      editorDirty &&
+      !window.confirm("Есть несохранённые изменения. Уйти без сохранения?")
+    )
+      return;
+    setPageState(next);
+    history.replaceState(
+      null,
+      "",
+      next === "editor" ? "#editor" : location.pathname,
+    );
+  };
   const accept = (next: Attempt) =>
     setAttempt((old) =>
       old?.id === next.id && old.revision > next.revision ? old : next,
@@ -79,29 +102,22 @@ function App() {
         const a = await api<Attempt>("/attempts/" + m.active_attempt);
         accept(a);
         setThread(a.threads[0].id);
-        setPage("game");
+        if (location.hash !== "#editor") setPage("game");
       }
     });
   }, []);
   useEffect(() => {
     if (!attempt || attempt.status === "completed") return;
-    let disposed = false;
-    const id = setInterval(() => {
-      api<Attempt>("/attempts/" + attempt.id)
-        .then((a) => {
-          if (disposed) return;
-          accept(a);
-          setError("");
-          if (a.status === "completed") void refresh();
-        })
-        .catch((e) => {
-          if (!disposed) setError(e.message);
-        });
-    }, 1000);
-    return () => {
-      disposed = true;
-      clearInterval(id);
-    };
+    return poll(
+      () => api<Attempt>("/attempts/" + attempt.id),
+      1000,
+      (e) => setGameError(e?.message ?? ""),
+      (a) => {
+        accept(a);
+        if (a.status === "completed")
+          void refresh().catch((e) => setGameError(e.message));
+      },
+    );
   }, [attempt?.id, attempt?.status]);
   useEffect(() => {
     if (!me) return;
@@ -115,18 +131,24 @@ function App() {
   }, [page, scope]);
   useEffect(() => {
     if (!me) return;
-    const id = setInterval(async () => {
-      try {
-        setNotices(await api<Notice[]>("/notifications"));
-        if (page === "progress")
-          setProgress(await api<Progress>("/me/progress"));
-        if (page === "ranking")
-          setRanks(await api<Rank[]>("/leaderboard?scope=" + scope));
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Не удалось обновить данные");
-      }
-    }, 5000);
-    return () => clearInterval(id);
+    return poll(
+      async () => ({
+        notices: await api<Notice[]>("/notifications"),
+        progress:
+          page === "progress" ? await api<Progress>("/me/progress") : null,
+        ranks:
+          page === "ranking"
+            ? await api<Rank[]>("/leaderboard?scope=" + scope)
+            : null,
+      }),
+      5000,
+      (e) => setNoticeError(e?.message ?? ""),
+      (data) => {
+        setNotices(data.notices);
+        if (data.progress) setProgress(data.progress);
+        if (data.ranks) setRanks(data.ranks);
+      },
+    );
   }, [me?.profile.id, page, scope]);
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -228,6 +250,7 @@ function App() {
     ["scenarios", "Сценарии", MessageCircle],
     ["progress", "Прогресс", ChartNoAxesColumn],
     ["ranking", "Рейтинг", Trophy],
+    ["editor", "Редактор", FilePenLine],
   ] as const;
   if (!me)
     return (
@@ -292,6 +315,7 @@ function App() {
           {nav.map(([id, label, Icon]) => (
             <button
               key={id}
+              aria-label={label}
               className={
                 page === id || (page === "game" && id === "scenarios")
                   ? "active"
@@ -310,6 +334,22 @@ function App() {
           </div>
         </nav>
         <main>
+          {(noticeError || gameError) && (
+            <p className="error" role="status">
+              {gameError || noticeError}
+            </p>
+          )}
+          {page === "editor" && (
+            <EditorScreen
+              onDirty={setEditorDirty}
+              onPublished={() => {
+                void api<Scenario[]>("/scenarios")
+                  .then(setScenarios)
+                  .catch((e) => setError(e.message));
+              }}
+            />
+          )}
+
           {error && (
             <div className="error" role="alert">
               {error}
@@ -861,8 +901,16 @@ function App() {
               <ArrowLeft size={18} />
               Назад
             </button>
-            <h1>{selected.title}</h1>
-            <p>{selected.intro}</p>
+            <h1>
+              {mode === "check"
+                ? (selected.check?.title ?? selected.title)
+                : selected.title}
+            </h1>
+            <p>
+              {mode === "check"
+                ? (selected.check?.intro ?? selected.intro)
+                : selected.intro}
+            </p>
             <div className="tabs">
               <button
                 className={mode === "train" ? "active" : ""}
@@ -882,6 +930,12 @@ function App() {
                 ? "Подсказки и пауза доступны. Без рейтинговых баллов."
                 : "Без подсказок и паузы. Сроки продолжаются при закрытии браузера."}
             </p>
+            {mode === "check" && (
+              <p className="footnote">
+                Для честного сравнения результатов проверка использует
+                закреплённую версию {selected.check?.version ?? "1"}.
+              </p>
+            )}
             {mode === "train" && selected.id === "service" && (
               <label>
                 Вариант ситуации

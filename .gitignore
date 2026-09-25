@@ -6,3 +6,5 @@ client/dist/
 tmp/
 runtime/
 *.log
+
+.editor-access.txt
