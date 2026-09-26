@@ -22,8 +22,8 @@ case "${1:-renew}" in
       --ip-address 185.173.147.205
     exit 0
     ;;
-  renew) "${certbot[@]}" renew --cert-name vsm-ip --non-interactive ;;
-  test) "${certbot[@]}" renew --cert-name vsm-ip --non-interactive --dry-run ;;
+  renew) "${certbot[@]}" renew --cert-name vsm-ip --non-interactive --no-random-sleep-on-renew ;;
+  test) "${certbot[@]}" renew --cert-name vsm-ip --non-interactive --no-random-sleep-on-renew --dry-run ;;
   *) printf 'Usage: bash scripts/certificates.sh [issue|renew|test]\n' >&2; exit 2 ;;
 esac
 # Test first: a bad certificate/configuration must not stop existing workers.
