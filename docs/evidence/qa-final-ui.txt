@@ -1,0 +1,12 @@
+
+Running 5 tests using 1 worker
+
+(node:38264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\profile-security.spec.ts:3:1 › псевдоним выводится как текст и не исполняет HTML (596ms)
+  ok 2 tests\qa-feedback.spec.ts:14:1 › новый результат не скрыт старой ошибкой, достижения и профиль (1.3s)
+  ok 3 tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 390 (586ms)
+  ok 4 tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 1366 (651ms)
+  ok 5 tests\results.spec.ts:70:1 › незавершённое упражнение: видимое объяснение и возврат к сохранённой попытке (1.4s)
+
+  5 passed (5.5s)

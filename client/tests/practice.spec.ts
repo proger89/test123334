@@ -102,7 +102,7 @@ test("ошибка → упражнение → сохранение → сам�
     .getByRole("button", { name: /Не трогать вещь и предупредить/ })
     .click();
   await page.getByRole("button", { name: /По связи сообщить/ }).click();
-  await page.getByRole("button", { name: "Завершить обращение." }).click();
+  await page.getByRole("button", { name: "Завершить обращение и открыть разбор" }).click();
   await expect(page.getByText("100/100", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Рекомендуемые упражнения" }),
@@ -195,7 +195,7 @@ test("TC001 TC002 TC012 профиль и прочтение уведомлен�
   );
   await page.getByRole("button", { name: "Уведомления", exact: true }).click();
   const count = Number(await page.locator(".notice-count").innerText());
-  await page.locator(".notice").filter({ hasText: "Испытание:" }).click();
+  await page.locator(".notice").filter({ hasText: "Испытание «Две ситуации — два решения»" }).click();
   await expect(
     page.getByRole("heading", { name: "Мой прогресс" }),
   ).toBeVisible();
@@ -203,7 +203,7 @@ test("TC001 TC002 TC012 профиль и прочтение уведомлен�
   await page.reload();
   await page.getByRole("button", { name: "Уведомления", exact: true }).click();
   await expect(
-    page.locator(".notice").filter({ hasText: "Испытание:" }),
+    page.locator(".notice").filter({ hasText: "Испытание «Две ситуации — два решения»" }),
   ).toContainText("Прочитано");
 });
 

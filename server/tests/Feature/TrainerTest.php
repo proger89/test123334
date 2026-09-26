@@ -65,6 +65,52 @@ final class TrainerTest extends TestCase
         return $a;
     }
 
+    public function test_latest_success_is_separate_from_historical_critical_failure(): void
+    {
+        $failed = $this->start();
+        $this->act($failed, 'move');
+        $success = $this->complete();
+        $summary = app(Progress::class)->summary($this->profile);
+        $safety = collect($summary['competencies'])->firstWhere('name', 'Безопасность');
+        self::assertTrue($safety['critical']);
+        self::assertNull($safety['percent']);
+        self::assertSame(1, $safety['critical_attempts']);
+        self::assertFalse($safety['latest_critical']);
+        self::assertSame(100, $safety['latest_percent']);
+        self::assertSame($success['id'], $safety['latest_attempt_id']);
+        self::assertCount(2, $summary['history']);
+        self::assertSame(100, $summary['permanent']);
+    }
+
+    public function test_achievement_catalog_includes_locked_items_and_immutable_source(): void
+    {
+        $initial = app(Progress::class)->summary($this->profile)['achievements'];
+        self::assertCount(4, $initial);
+        self::assertNull($initial[0]['earned_at']);
+        $first = $this->complete();
+        $this->complete();
+        $catalog = app(Progress::class)->summary($this->profile)['achievements'];
+        self::assertSame('Первая смена', $catalog[0]['title']);
+        self::assertSame($first['id'], $catalog[0]['attempt_id']);
+        self::assertSame($first['id'], $catalog[2]['attempt_id']);
+        self::assertNull($catalog[1]['earned_at']);
+        self::assertNotEmpty($catalog[1]['condition']);
+    }
+
+    public function test_demo_bonus_is_local_only_and_cannot_be_extended_or_duplicated(): void
+    {
+        $this->withSession(['profile_id' => $this->profile])->postJson('/api/v1/demo/bonus-expiry')->assertForbidden();
+        $this->app->instance('env', 'local');
+        $this->withSession(['_token' => 'test-csrf'])->withHeader('X-CSRF-TOKEN', 'test-csrf');
+        $this->withSession(['profile_id' => $this->profile])->postJson('/api/v1/demo/bonus-expiry')->assertOk()->assertJsonPath('bonus', 20);
+        $expiry = DB::table('bonuses')->where('profile_id', $this->profile)->value('expires_at');
+        $this->withSession(['profile_id' => $this->profile])->postJson('/api/v1/demo/bonus-expiry')->assertOk()->assertJsonPath('bonus', 20);
+        self::assertSame($expiry, DB::table('bonuses')->where('profile_id', $this->profile)->value('expires_at'));
+        DB::table('bonuses')->where('profile_id', $this->profile)->update(['expires_at' => now()->subSecond()]);
+        $this->withSession(['profile_id' => $this->profile])->postJson('/api/v1/demo/bonus-expiry')->assertOk()->assertJsonPath('bonus', 0);
+        self::assertSame(1, DB::table('bonuses')->where('profile_id', $this->profile)->count());
+    }
+
     public function test_exact_duplicate_returns_identical_response_and_no_second_effect(): void
     {
         $a = $this->start();

@@ -120,6 +120,9 @@ final class TrainerController extends Controller
         $this->progress->syncNotifications($id);
 
         return DB::table('notifications')->where('profile_id', $id)->orderByDesc('id')->get()->map(function (object $notice): object {
+            if ($notice->event_key === 'challenge:both') {
+                $notice->title = 'Испытание «Две ситуации — два решения»';
+            }
             $notice->body = match (strtok($notice->event_key, ':')) {
                 'scenario' => 'Откройте список смен, чтобы выбрать обучение или проверку.',
                 'challenge' => 'После вступления пройдите обе проверки за 24 часа. Награда — 20 временных баллов на сутки.',
@@ -151,6 +154,13 @@ final class TrainerController extends Controller
         });
 
         return $this->progress->summary($id);
+    }
+
+    public function demoBonus(Request $request): array
+    {
+        app(\App\Game\DemoBonus::class)->create($this->profile($request));
+
+        return $this->progress->summary($this->profile($request));
     }
 
     public function leaderboard(Request $r): array

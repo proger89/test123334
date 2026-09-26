@@ -81,6 +81,14 @@ export type Progress = {
   bonus: number;
   total: number;
   level: number;
+  local_demo: boolean;
+  achievements: {
+    code: string;
+    title: string;
+    condition: string;
+    earned_at: string | null;
+    attempt_id: string | null;
+  }[];
   awards: { id: number; title: string; created_at: string }[];
   challenge: { completed_at: string | null; expires_at: string } | null;
   bonuses: { id: number; source: string; points: number; expires_at: string }[];
@@ -92,6 +100,15 @@ export type Progress = {
     critical: boolean;
     percent: number | null;
     attempts: number;
+    passed: number;
+    total: number;
+    critical_attempts: number;
+    latest_attempt_id: string;
+    latest_finished_at: string;
+    latest_percent: number | null;
+    latest_critical: boolean;
+    latest_passed: number;
+    latest_total: number;
   }[];
   history: {
     id: string;

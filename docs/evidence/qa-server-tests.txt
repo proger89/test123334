@@ -1,0 +1,87 @@
+ Container vsm-hackathon-test-db-1 Running 
+ Container vsm-hackathon-test-tests-1 Recreate 
+ Container vsm-hackathon-test-tests-1 Recreated 
+Attaching to tests-1
+ Container vsm-hackathon-test-db-1 Waiting 
+ Container vsm-hackathon-test-db-1 Healthy 
+ Container vsm-hackathon-test-tests-1 Starting 
+ Container vsm-hackathon-test-tests-1 Started 
+tests-1  | 
+tests-1  |    INFO  Nothing to migrate.  
+tests-1  | 
+tests-1  | Сценарии и демоданные готовы
+tests-1  | 
+tests-1  |    PASS  Tests\Unit\EngineTest
+tests-1  |   ✓ reporting before checking seat is valid                              0.01s  
+tests-1  |   ✓ unresolved conversation cannot pass
+tests-1  |   ✓ false promise has deferred consequence
+tests-1  |   ✓ unknown executable content is rejected
+tests-1  |   ✓ correct service
+tests-1  |   ✓ no seat does not lose checks
+tests-1  |   ✓ late baggage is not passed
+tests-1  |   ✓ rude action loses communication
+tests-1  |   ✓ security both orders
+tests-1  |   ✓ security timeout never displays positive safety
+tests-1  |   ✓ moving unknown bag is critical
+tests-1  |   ✓ hidden event uses original schedule after late wakeup
+tests-1  |   ✓ no future rules in public state
+tests-1  |   ✓ state round trip
+tests-1  | 
+tests-1  |    PASS  Tests\Feature\EditorTest
+tests-1  |   ✓ access requires code expires and cannot read other profiles          0.12s  
+tests-1  |   ✓ both baselines are valid and create is repeat safe                   0.05s  
+tests-1  |   ✓ invalid draft can be saved but not published or previewed            0.05s  
+tests-1  |   ✓ conflicting save keeps first writer and published copy is immutable  0.05s  
+tests-1  |   ✓ publication preserves old attempt and ranked version                 0.07s  
+tests-1  |   ✓ preview is isolated repeat safe and uses frozen draft                0.06s  
+tests-1  |   ✓ dead ends unknown flags and rubric changes are rejected              0.04s  
+tests-1  |   ✓ malformed shape is rejected and numeric step reports a content erro… 0.03s  
+tests-1  | 
+tests-1  |    PASS  Tests\Feature\ExampleTest
+tests-1  |   ✓ the application returns a successful response                        0.02s  
+tests-1  | 
+tests-1  |    PASS  Tests\Feature\PracticeTest
+tests-1  |   ✓ recommendation is based on source and does not reveal future answer… 0.04s  
+tests-1  |   ✓ success preserves source score critical competency rewards and expo… 0.04s  
+tests-1  |   ✓ start retry is exact and changed payload conflicts even after compl… 0.04s  
+tests-1  |   ✓ other profile and unrecommended topic are rejected                   0.03s  
+tests-1  |   ✓ only one open attempt and practice cannot recommend itself           0.05s  
+tests-1  |   ✓ priority requires all steps and timeout is applied once              0.07s  
+tests-1  |   ✓ pause reload frozen definition and successful priority               0.05s  
+tests-1  |   ✓ communication wrong promise and unfinished source                    0.04s  
+tests-1  |   ✓ tc001 tc002 profile boundaries and saved identity                    0.06s  
+tests-1  |   ✓ tc015 client cannot change scores or unlock rewards                  0.04s  
+tests-1  |   ✓ malformed resource ids are not found instead of database errors      0.01s  
+tests-1  |   ✓ tc010 reward date and count survive duplicate completion             0.05s  
+tests-1  |   ✓ tc012 tc013 notifications are readable deduplicated and expire       0.05s  
+tests-1  |   ✓ tc011 ranking scopes and order                                       0.04s  
+tests-1  |   ✓ tc017 frequent unmet criteria link to real source                    0.07s  
+tests-1  | 
+tests-1  |    PASS  Tests\Feature\TrainerTest
+tests-1  |   ✓ latest success is separate from historical critical failure          0.07s  
+tests-1  |   ✓ achievement catalog includes locked items and immutable source       0.06s  
+tests-1  |   ✓ demo bonus is local only and cannot be extended or duplicated        0.04s  
+tests-1  |   ✓ exact duplicate returns identical response and no second effect      0.02s  
+tests-1  |   ✓ timeout persists when command rejected                               0.02s  
+tests-1  |   ✓ training never awards ranking points                                 0.03s  
+tests-1  |   ✓ repeated check does not farm points                                  0.06s  
+tests-1  |   ✓ challenge counts only checks after join                              0.11s  
+tests-1  |   ✓ bonus expiration does not depend on worker                           0.02s  
+tests-1  |   ✓ one open attempt per profile                                         0.02s  
+tests-1  |   ✓ other profile cannot access attempt                                  0.02s  
+tests-1  |   ✓ pause preserves hidden event and is idempotent                       0.02s  
+tests-1  |   ✓ published versions are immutable                                     0.01s  
+tests-1  |   ✓ export requires scoped token                                         0.01s  
+tests-1  |   ✓ new version preserves existing attempt and ranked version            0.03s  
+tests-1  |   ✓ best scores increase only by difference                              0.03s  
+tests-1  |   ✓ competencies keep last five of each group beyond history limit       0.15s  
+tests-1  |   ✓ challenge uses completion time not later award processing time       0.09s  
+tests-1  | 
+tests-1  |   Tests:    56 passed (462 assertions)
+tests-1  |   Duration: 2.10s
+tests-1  | 
+
+ Compose Stopping Aborting on container exit...
+tests-1 exited with code 0
+ Container vsm-hackathon-test-tests-1 Stopping 
+ Container vsm-hackathon-test-tests-1 Stopped 

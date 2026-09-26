@@ -1,3 +1,4 @@
+import { competencyName } from "./ProgressDetails";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import type { Attempt, Result } from "./api";
 import { PracticeOptions } from "./PracticeScreen";
@@ -101,7 +102,7 @@ export function ResultsScreen({
         <div className="competency-row">
           {Object.entries(result.competencies).map(([name, competency]) => (
             <div key={name}>
-              <strong>{name}</strong>
+              <strong>{competencyName(name)}</strong>
               <p>
                 {competency.percent === null
                   ? "Допущена критическая ошибка"

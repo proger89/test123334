@@ -38,4 +38,5 @@ Route::prefix('/api/v1')->middleware('throttle:trainer')->group(function () {
     Route::get('/notifications', [T::class, 'notifications']);
     Route::patch('/notifications/{id}', [T::class, 'read'])->whereNumber('id');
     Route::post('/challenges/join', [T::class, 'join']);
+    Route::post('/demo/bonus-expiry', [T::class, 'demoBonus']);
 });

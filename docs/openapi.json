@@ -459,18 +459,7 @@
             }
           },
           "409": {
-            "description": "Есть незавершённое прохождение, упражнение не рекомендовано или ключ использован с другими данными. При active_attempt поле error.active_attempt_id содержит идентификатор своей незавершённой попытки для продолжения. Повтор с прежним request_id возвращает первоначальные статус и тело.",
-            "content": {
-              "application/json": {
-                "example": {
-                  "error": {
-                    "code": "active_attempt",
-                    "message": "У вас уже есть незавершённое прохождение. Продолжите его, прежде чем начинать новое упражнение.",
-                    "active_attempt_id": "b37bbfe3-c750-407e-85bd-b3b4484b1166"
-                  }
-                }
-              }
-            }
+            "description": "Есть незавершённое прохождение, упражнение не рекомендовано или ключ использован с другими данными. Повтор с прежним request_id возвращает первоначальные статус и тело."
           }
         },
         "security": [
@@ -1292,6 +1281,79 @@
     "/challenges/join": {
       "post": {
         "summary": "Вступить в испытание один раз",
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Progress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нет действующей сессии или ключа"
+          },
+          "404": {
+            "description": "Запись отсутствует или принадлежит другому профилю"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          },
+          "419": {
+            "description": "Сессия истекла либо неверный CSRF-токен"
+          },
+          "422": {
+            "description": "Ошибка полей",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The given data was invalid.",
+                  "errors": {
+                    "name": [
+                      "Обязательное поле"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/demo/bonus-expiry": {
+      "post": {
+        "summary": "Только APP_ENV=local: однократная награда на 90 секунд. Повтор не продлевает срок. На сервере 403.",
         "responses": {
           "200": {
             "description": "Успешно",
@@ -2997,7 +3059,7 @@
           "competencies": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/CompetencySummary"
             }
           },
           "history": {
@@ -3017,6 +3079,15 @@
             "items": {
               "$ref": "#/components/schemas/PracticeFocus"
             }
+          },
+          "achievements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Achievement"
+            }
+          },
+          "local_demo": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3031,7 +3102,9 @@
           "competencies",
           "history",
           "practice_history",
-          "practice_focus"
+          "practice_focus",
+          "achievements",
+          "local_demo"
         ],
         "additionalProperties": false
       },
@@ -3383,6 +3456,131 @@
           "explanation",
           "loyalty_change",
           "safety_change"
+        ],
+        "additionalProperties": false
+      },
+      "Achievement": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "enum": [
+              "first",
+              "service",
+              "security",
+              "both"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "condition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "earned_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attempt_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "title",
+          "condition",
+          "earned_at",
+          "attempt_id"
+        ],
+        "additionalProperties": false
+      },
+      "CompetencySummary": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "latest_attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "latest_finished_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "total": {
+            "type": "integer"
+          },
+          "passed": {
+            "type": "integer"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "critical_attempts": {
+            "type": "integer"
+          },
+          "latest_total": {
+            "type": "integer"
+          },
+          "latest_passed": {
+            "type": "integer"
+          },
+          "critical": {
+            "type": "boolean"
+          },
+          "latest_critical": {
+            "type": "boolean"
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "latest_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "scenario",
+          "version",
+          "mode",
+          "name",
+          "latest_attempt_id",
+          "latest_finished_at",
+          "total",
+          "passed",
+          "attempts",
+          "critical_attempts",
+          "latest_total",
+          "latest_passed",
+          "critical",
+          "latest_critical",
+          "percent",
+          "latest_percent"
         ],
         "additionalProperties": false
       },

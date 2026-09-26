@@ -39,11 +39,11 @@ test('две смены, сохранение, испытание, достиж�
   await expect(page.getByText('100/100',{exact:true})).toBeVisible();
   await expect(page.locator('a[href*="situations.pdf"]')).toHaveCount(8);
   await page.getByRole('button',{name:'Мой прогресс',exact:true}).click();
-  await expect(page.getByText('Свободный проход',{exact:true})).toBeVisible();
+  await expect(page.getByText('Верный приоритет',{exact:true})).toBeVisible();
   await start(page,'Похожая вещь',true);
   await security(page);
   await page.getByRole('button',{name:'Мой прогресс',exact:true}).click();
-  await expect(page.getByText('Две смены',{exact:true})).toBeVisible();
+  await expect(page.locator('.achievement.earned').getByText('Две ситуации — два решения',{exact:true})).toBeVisible();
   await expect(page.getByText(/Испытание выполнено/)).toBeVisible();
   await page.getByRole('button',{name:'Рейтинг',exact:true}).click();
   for (const scope of ['Моя бригада','Моё депо','Компания']) {

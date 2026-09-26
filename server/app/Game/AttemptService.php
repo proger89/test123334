@@ -127,7 +127,7 @@ final class AttemptService
             $values['finished_at'] = DB::raw('clock_timestamp()');
             DB::table('attempts')->where('id', $row->id)->update($values);
             if ($s->practice === null) {
-                $this->progress->record($row->profileId, $s, $r);
+                $this->progress->record($row->profileId, $s, $r, $row->id);
             }
 
             return;

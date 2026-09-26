@@ -1,0 +1,10 @@
+
+Running 3 tests using 1 worker
+
+(node:28108) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\practice.spec.ts:186:1 › TC001 TC002 TC012 профиль и прочтение уведомлений (700ms)
+  ok 2 tests\qa-feedback.spec.ts:14:1 › новый результат не скрыт старой ошибкой, достижения и профиль (1.0s)
+  ok 3 tests\qa-feedback.spec.ts:63:1 › реальные 90 секунд: предупреждение, истечение и рейтинг (1.5m)
+
+  3 passed (1.6m)

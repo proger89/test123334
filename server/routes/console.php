@@ -51,11 +51,8 @@ Artisan::command('scenario:publish {file}', function () {
     $this->info('Версия опубликована для обучения');
 });
 Artisan::command('demo:bonus-expiry {profile}', function () {
-    abort_unless(app()->environment('local'), 403);
-    $id = $this->argument('profile');
-    abort_unless(DB::table('profiles')->where('id', $id)->exists(), 404);
-    DB::table('bonuses')->insert(['profile_id' => $id, 'source' => 'demo:'.Str::uuid(), 'points' => 20, 'expires_at' => now()->addSeconds(90), 'warning_seconds' => 60]);
-    $this->info('Демонстрационный бонус действует 90 секунд');
+    app(\App\Game\DemoBonus::class)->create($this->argument('profile'));
+    $this->info('Ускоренная демонстрация: 90 секунд, один раз на профиль');
 });
 Artisan::command('integration:token', function () {
     $token = bin2hex(random_bytes(24));

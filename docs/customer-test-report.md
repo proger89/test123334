@@ -50,3 +50,6 @@ Windows, Docker, PostgreSQL 17, установленный Google Chrome 153.0.8
 Нормативная проверка содержания заказчиком, другие браузеры, физические мобильные устройства и работа на инфраструктуре заказчика остаются вне этого прогона. Локальные измерения времени ответа не доказывают улучшение обучения или профессиональную пригодность сотрудника.
 
 Подтверждения: `docs/evidence/practice-server-tests.txt`, `practice-browser-tests.txt`, `practice-http-acceptance.json`, `practice-result.png`, `practice-390.png`, `practice-768.png`. Команды: `scripts/local.ps1 test`; `BROWSER_CHANNEL=chrome` с `playwright test`; `python scripts/http_acceptance.py` после запуска отдельного приложения на 8181.
+
+
+Дополнительная проверка документа с цветными пометками от 26 сентября: [разбор каждого замечания и результаты](qa-feedback-2026-09-26.md).

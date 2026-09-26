@@ -1,0 +1,93 @@
+
+Running 24 tests using 1 worker
+
+(node:39488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 tests\connection.spec.ts:2:1 › после краткого обрыва уведомления восстанавливаются и сообщение исчезает (476ms)
+  ok  2 tests\connection.spec.ts:28:1 › единичный сбой фонового запроса не оставляет вечную ошибку (10.6s)
+  ok  3 tests\connection.spec.ts:54:1 › смена сохраняет серверный срок после обрыва и возвращения (37.5s)
+  ok  4 tests\connection.spec.ts:80:1 › после обновления токена отклонённое действие повторяется один раз (465ms)
+  ok  5 tests\practice.spec.ts:24:1 › ошибка → упражнение → сохранение → самостоятельная проверка; TC005 TC017 TC020 (1.6s)
+  ok  6 tests\practice.spec.ts:114:3 › упражнение на экране 390 (888ms)
+  ok  7 tests\practice.spec.ts:114:3 › упражнение на экране 768 (1.0s)
+  ok  8 tests\practice.spec.ts:153:1 › неверное обещание → объяснение → повтор упражнения (776ms)
+  x   9 tests\practice.spec.ts:186:1 › TC001 TC002 TC012 профиль и прочтение уведомлений (1.5m)
+(node:38444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 10 tests\practice.spec.ts:210:1 › TC004 TC006 TC008 TC016 переключение, реальная просрочка и разбор (1.1m)
+  ok 11 tests\practice.spec.ts:267:1 › TC007 пауза 10 секунд и возвращение после закрытия вкладки (46.9s)
+  ok 12 tests\profile-security.spec.ts:3:1 › псевдоним выводится как текст и не исполняет HTML (345ms)
+  ok 13 tests\qa-feedback.spec.ts:10:1 › новый результат не скрыт старой ошибкой, достижения и профиль (778ms)
+  x  14 tests\qa-feedback.spec.ts:39:1 › реальные 90 секунд: предупреждение, истечение и рейтинг (45.4s)
+(node:33508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 15 tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 390 (608ms)
+  ok 16 tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 1366 (622ms)
+  ok 17 tests\results.spec.ts:70:1 › незавершённое упражнение: видимое объяснение и возврат к сохранённой попытке (1.3s)
+first_useful_screen_ms=85
+  ok 18 tests\trainer.spec.ts:19:1 › две смены, сохранение, испытание, достижения и три рейтинга (22.1s)
+  ok 19 tests\trainer.spec.ts:56:1 › критическая ошибка, обучение, правильная проверка (774ms)
+  ok 20 tests\trainer.spec.ts:68:37 › экран 390 (675ms)
+  ok 21 tests\trainer.spec.ts:68:37 › экран 768 (563ms)
+  ok 22 tests\trainer.spec.ts:68:37 › экран 1366 (686ms)
+  ok 23 tests\trainer.spec.ts:81:1 › сравнение с макетом и клавиатура (553ms)
+  ok 24 tests\trainer.spec.ts:95:1 › понятное сообщение при потере связи и восстановление смены (1.8s)
+
+
+  1) tests\practice.spec.ts:186:1 › TC001 TC002 TC012 профиль и прочтение уведомлений ──────────────
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for locator('.notice').filter({ hasText: 'Испытание:' })
+
+
+      196 |   await page.getByRole("button", { name: "Уведомления", exact: true }).click();
+      197 |   const count = Number(await page.locator(".notice-count").innerText());
+    > 198 |   await page.locator(".notice").filter({ hasText: "Испытание «Две ситуации — два решения»" }).click();
+          |                                                                   ^
+      199 |   await expect(
+      200 |     page.getByRole("heading", { name: "Мой прогресс" }),
+      201 |   ).toBeVisible();
+        at D:\hackatons\mt-hackathon\client\tests\practice.spec.ts:198:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\tmp\browser-artifacts\practice-TC001-TC002-TC012-профиль-и-прочтение-уведомлений\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\tmp\browser-artifacts\practice-TC001-TC002-TC012-профиль-и-прочтение-уведомлений\error-context.md
+
+  2) tests\qa-feedback.spec.ts:39:1 › реальные 90 секунд: предупреждение, истечение и рейтинг ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Скоро истекут 20 временных баллов', { exact: true })
+    Expected: visible
+    Timeout: 45000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Скоро истекут 20 временных баллов', { exact: true }) with timeout 45000ms
+      - waiting for getByText('Скоро истекут 20 временных баллов', { exact: true })
+
+
+      45 |   await expect(page.locator('.stats').getByText('20',{exact:true})).toBeVisible();
+      46 |   await page.getByRole('button',{name:'Уведомления',exact:true}).click();
+    > 47 |   await expect(page.getByText('Скоро истекут 20 временных баллов',{exact:true})).toBeVisible({timeout:45000});
+         |                                                                                  ^
+      48 |   await expect(page.getByText('Срок 20 временных баллов истёк',{exact:true})).toBeVisible({timeout:75000});
+      49 |   await page.getByRole('button',{name:'Рейтинг',exact:true}).click();
+      50 |   await expect(page.locator('.rank-list .self')).toContainText('0');
+        at D:\hackatons\mt-hackathon\client\tests\qa-feedback.spec.ts:47:82
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\tmp\browser-artifacts\qa-feedback-реальные-90-се-97a10-еждение-истечение-и-рейтинг\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\tmp\browser-artifacts\qa-feedback-реальные-90-се-97a10-еждение-истечение-и-рейтинг\error-context.md
+
+  2 failed
+    tests\practice.spec.ts:186:1 › TC001 TC002 TC012 профиль и прочтение уведомлений ───────────────
+    tests\qa-feedback.spec.ts:39:1 › реальные 90 секунд: предупреждение, истечение и рейтинг ───────
+  22 passed (5.6m)

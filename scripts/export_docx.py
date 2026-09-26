@@ -2,6 +2,7 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 import re
+from docx.oxml.ns import qn
 root=Path(__file__).resolve().parents[1]
 doc=Document()
 sec=doc.sections[0]
@@ -20,4 +21,8 @@ for line in (root/'docs/VSM_TZ_v4_1.md').read_text(encoding='utf8').splitlines()
  if text.startswith('# '):doc.add_paragraph(text[2:],'Title')
  elif text.startswith('## '):doc.add_heading(text[3:],level=1)
  else:doc.add_paragraph(text)
+for el in list(doc.styles.element.iter(qn('w:pBdr'))):
+ el.getparent().remove(el)
+for el in list(doc.element.iter(qn('w:pBdr'))):
+ el.getparent().remove(el)
 doc.save(root/'docs/VSM_TZ_v4_1.docx')

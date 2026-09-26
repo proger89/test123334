@@ -6,6 +6,7 @@ namespace App\Game;
 
 use App\Practice\PracticeCatalog;
 use App\Practice\PracticeFocus;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 final class Progress
@@ -15,14 +16,14 @@ final class Progress
         DB::table('notifications')->insertOrIgnore(['profile_id' => $profile, 'event_key' => $key, 'title' => $title, 'target' => $target, 'created_at' => now(), 'updated_at' => now()]);
     }
 
-    private function award(string $profile, string $code, string $title): void
+    private function award(string $profile, Achievement $achievement, ?string $attemptId): void
     {
-        DB::table('awards')->insertOrIgnore(['profile_id' => $profile, 'code' => $code, 'title' => $title, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('awards')->insertOrIgnore(['profile_id' => $profile, 'code' => $achievement->value, 'title' => $achievement->title(), 'attempt_id' => $attemptId, 'created_at' => now(), 'updated_at' => now()]);
     }
 
-    public function record(string $profile, AttemptState $s, AttemptResult $result): void
+    public function record(string $profile, AttemptState $s, AttemptResult $result, ?string $attemptId = null): void
     {
-        $this->award($profile, 'first', 'Первое завершение');
+        $this->award($profile, Achievement::First, $attemptId);
         if ($s->mode !== 'check' || ! $result->passed) {
             return;
         }
@@ -38,13 +39,13 @@ final class Progress
             $q->update(['score' => $result->score]);
         }
         if ($s->scenario === 'service' && ($s->checks['timely'] ?? false)) {
-            $this->award($profile, 'service', 'Свободный проход');
+            $this->award($profile, Achievement::Service, $attemptId);
         }
         if ($s->scenario === 'security') {
-            $this->award($profile, 'security', 'Внимание к обстоятельствам');
+            $this->award($profile, Achievement::Security, $attemptId);
         }
         if (DB::table('best_results')->where('profile_id', $profile)->count() === 2) {
-            $this->award($profile, 'both', 'Две смены');
+            $this->award($profile, Achievement::Both, $attemptId);
         }
         $entry = DB::table('challenge_entries')->where('profile_id', $profile)->first();
         if (! $entry || $entry->completed_at) {
@@ -62,7 +63,7 @@ final class Progress
         foreach (DB::table('scenario_versions')->get() as $s) {
             $this->notice($profile, 'scenario:'.$s->scenario.':'.$s->version, 'Доступен сценарий: '.json_decode($s->definition, true)['title'], 'scenarios');
         }
-        $this->notice($profile, 'challenge:both', 'Испытание: пройдите две проверки за 24 часа', 'progress');
+        $this->notice($profile, 'challenge:both', 'Испытание «Две ситуации — два решения»', 'progress');
         foreach (DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get() as $b) {
             if (now()->addSeconds($b->warning_seconds)->gte($b->expires_at)) {
                 $this->notice($profile, 'bonus:'.$b->id, 'Скоро истекут '.$b->points.' временных баллов', 'progress');
@@ -86,7 +87,7 @@ final class Progress
             DB::table('attempts')->where('profile_id', $profile)->whereNull('practice_id')->where('status', 'completed')
                 ->selectRaw('*, row_number() over (partition by scenario, version, mode order by finished_at desc, id desc) as observation_number'),
             'observations'
-        )->where('observation_number', '<=', 5)->orderByDesc('finished_at')->get();
+        )->where('observation_number', '<=', 5)->orderByDesc('finished_at')->orderByDesc('id')->get();
         $competencies = [];
         $counts = [];
         $focus = [];
@@ -109,23 +110,50 @@ final class Progress
             }
             foreach ($r['competencies'] as $name => $c) {
                 $k = $key.':'.$name;
-                $old = $competencies[$k] ?? ['scenario' => $attempt->scenario, 'version' => $attempt->version, 'mode' => $attempt->mode, 'name' => $name, 'total' => 0, 'passed' => 0, 'critical' => false, 'attempts' => 0];
-                $old['total'] += $c['total'];
-                $old['passed'] += $c['passed'];
-                $old['critical'] = $old['critical'] || $c['status'] === 'critical_failure';
-                $old['attempts']++;
-                $competencies[$k] = $old;
+                $entry = $competencies[$k] ??= new CompetencySummary(
+                    $attempt->scenario, $attempt->version, $attempt->mode, $name,
+                    $attempt->id, $attempt->finished_at, $c['percent'],
+                    $c['status'] === 'critical_failure', $c['passed'], $c['total'],
+                );
+                $entry->observe($c['passed'], $c['total'], $c['status'] === 'critical_failure');
             }
-        }
-        foreach ($competencies as &$c) {
-            $c['percent'] = $c['critical'] ? null : (int) round(100 * $c['passed'] / $c['total']);
         }
 
         $practiceFocus = array_values(array_filter($focus, fn (PracticeFocus $item) => $item->misses > 0));
         usort($practiceFocus, fn (PracticeFocus $a, PracticeFocus $b) => ($b->misses <=> $a->misses) ?: strcmp($a->label, $b->label));
         $practiceFocus = array_slice($practiceFocus, 0, 5);
 
-        return ['permanent' => $permanent, 'bonus' => $bonus, 'total' => $permanent + $bonus, 'level' => $permanent >= 200 ? 4 : ($permanent >= 100 ? 3 : ($permanent >= 50 ? 2 : 1)), 'awards' => DB::table('awards')->where('profile_id', $profile)->get(), 'best' => DB::table('best_results')->where('profile_id', $profile)->get(), 'challenge' => DB::table('challenge_entries')->where('profile_id', $profile)->first(), 'bonuses' => DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get(), 'competencies' => array_values($competencies), 'practice_focus' => $practiceFocus, 'practice_history' => $this->practiceHistory($profile), 'history' => $history->map(fn ($a) => ['id' => $a->id, 'scenario' => $a->scenario, 'mode' => $a->mode, 'finished_at' => $a->finished_at, 'result' => json_decode($a->result, true)])];
+        return [
+            'permanent' => $permanent, 'bonus' => $bonus, 'total' => $permanent + $bonus,
+            'level' => $permanent >= 200 ? 4 : ($permanent >= 100 ? 3 : ($permanent >= 50 ? 2 : 1)),
+            'awards' => DB::table('awards')->where('profile_id', $profile)->get(),
+            'best' => DB::table('best_results')->where('profile_id', $profile)->get(),
+            'challenge' => DB::table('challenge_entries')->where('profile_id', $profile)->first(),
+            'bonuses' => DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get(),
+            'competencies' => array_map(fn (CompetencySummary $c) => $c->jsonSerialize(), array_values($competencies)),
+            'achievements' => $this->achievements($profile),
+            'local_demo' => app()->environment('local'),
+            'practice_focus' => $practiceFocus,
+            'practice_history' => $this->practiceHistory($profile),
+            'history' => $history->map(fn ($a) => [
+                'id' => $a->id, 'scenario' => $a->scenario, 'mode' => $a->mode,
+                'finished_at' => $a->finished_at, 'result' => json_decode($a->result, true),
+            ]),
+        ];
+    }
+
+    /** @return list<array{code:string,title:string,condition:string,earned_at:?string,attempt_id:?string}> */
+    private function achievements(string $profile): array
+    {
+        $earned = DB::table('awards')->where('profile_id', $profile)->get()->keyBy('code');
+
+        return array_map(function (Achievement $definition) use ($earned): array {
+            $award = $earned->get($definition->value);
+
+            return ['code' => $definition->value, 'title' => $definition->title(),
+                'condition' => $definition->condition(), 'earned_at' => $award ? CarbonImmutable::parse($award->created_at, 'UTC')->toIso8601String() : null,
+                'attempt_id' => $award?->attempt_id];
+        }, Achievement::cases());
     }
 
     /** @return list<array{id:string,title:string,passed:bool,finished_at:string}> */

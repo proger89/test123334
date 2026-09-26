@@ -1155,3 +1155,13 @@ select {
     font-size: 12px;
   }
 }
+
+.achievement-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:16px; margin:20px 0; }
+.achievement { padding:22px; border:1px solid #d7e1ef; border-radius:18px; background:#fff; }
+.achievement h3 { margin:12px 0; }
+.achievement small { display:block; margin:10px 0; }
+.achievement.locked { background:#f2f5f9; color:#53647b; }
+.achievement.earned>svg { color:#b87300; }
+.skill-card { border-bottom:1px solid #d7e1ef; padding:12px 0 20px; }
+.skill-card details { margin-top:14px; }
+.skill-card summary { cursor:pointer; color:#125bc5; }

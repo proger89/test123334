@@ -53,6 +53,10 @@ schemas['Attempt']['properties'].update({'practice':{'oneOf':[ref('PracticeConte
 schemas['Attempt']['required'] += ['practice','practice_options','last_decision']
 schemas['Progress']['properties'].update({'practice_history':arr(ref('PracticeHistory')),'practice_focus':arr(ref('PracticeFocus'))})
 schemas['Progress']['required'] += ['practice_history','practice_focus']
+schemas['Achievement']=obj({'code':{'enum':['first','service','security','both']},'title':string,'condition':string,'earned_at':{'type':['string','null']},'attempt_id':{'type':['string','null']}})
+schemas['CompetencySummary']=obj({**{k:string for k in ['scenario','version','mode','name','latest_attempt_id','latest_finished_at']},**{k:integer for k in ['total','passed','attempts','critical_attempts','latest_total','latest_passed']},'critical':boolean,'latest_critical':boolean,'percent':nullable_number,'latest_percent':nullable_number})
+schemas['Progress']['properties'].update({'achievements':arr(ref('Achievement')),'local_demo':boolean,'competencies':arr(ref('CompetencySummary'))})
+schemas['Progress']['required'] += ['achievements','local_demo']
 schemas['Notice']['properties']['body']=string
 schemas['Notice']['required'].append('body')
 example.update({'practice':None,'practice_options':[],'last_decision':None})
@@ -84,6 +88,7 @@ endpoint('/leaderboard','get','Рейтинг выбранного подраз�
 endpoint('/notifications','get','Уведомления профиля',arr(ref('Notice')))
 endpoint('/notifications/{id}','patch','Отметить прочитанным',obj({'ok':boolean}),obj({},[]))
 endpoint('/challenges/join','post','Вступить в испытание один раз',ref('Progress'),obj({},[]))
+endpoint('/demo/bonus-expiry','post','Только APP_ENV=local: однократная награда на 90 секунд. Повтор не продлевает срок. На сервере 403.',ref('Progress'),obj({},[]))
 endpoint('/integrations/results','get','Экспорт для HR, LMS и учёта наград',ref('Export'),params=[{'name':'cursor','in':'query','schema':string}],export=True)
 
 # Authoring endpoints use the same cookie/CSRF boundary plus an 8-hour methodist grant.

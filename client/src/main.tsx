@@ -1,3 +1,4 @@
+import { Achievements, Competencies } from "./ProgressDetails";
 import { EditorScreen } from "./editor/EditorScreen";
 import { poll } from "./poll";
 import { GameScreen } from "./GameScreen";
@@ -34,7 +35,11 @@ function App() {
   const [me, setMe] = useState<Me | null>(null),
     [scenarios, setScenarios] = useState<Scenario[]>([]),
     [page, setPageState] = useState(
-      location.hash === "#editor" ? "editor" : "scenarios",
+      ["editor", "profile", "progress", "ranking", "notifications"].includes(
+        location.hash.slice(1),
+      )
+        ? location.hash.slice(1)
+        : "scenarios",
     ),
     [editorDirty, setEditorDirty] = useState(false),
     [noticeError, setNoticeError] = useState(""),
@@ -52,6 +57,7 @@ function App() {
     [error, setError] = useState(""),
     [activeConflict, setActiveConflict] = useState<string | null>(null),
     [hint, setHint] = useState(false),
+    [profileSaved, setProfileSaved] = useState(false),
     [name, setName] = useState(""),
     [portrait, setPortrait] = useState("conductor_card");
   const setPage = (next: string) => {
@@ -66,7 +72,11 @@ function App() {
     history.replaceState(
       null,
       "",
-      next === "editor" ? "#editor" : location.pathname,
+      ["editor", "profile", "progress", "ranking", "notifications"].includes(
+        next,
+      )
+        ? "#" + next
+        : location.pathname,
     );
   };
   const accept = (next: Attempt) =>
@@ -111,7 +121,7 @@ function App() {
         const a = await api<Attempt>("/attempts/" + m.active_attempt);
         accept(a);
         setThread(a.threads[0].id);
-        if (location.hash !== "#editor") setPage("game");
+        if (!location.hash) setPage("game");
         if (a.status === "completed") await refresh();
       }
     });
@@ -138,7 +148,7 @@ function App() {
       if (page === "ranking")
         setRanks(await api<Rank[]>("/leaderboard?scope=" + scope));
     });
-  }, [page, scope]);
+  }, [page, scope, me?.profile.id]);
   useEffect(() => {
     if (!me) return;
     return poll(
@@ -499,29 +509,22 @@ function App() {
                   <strong>{progress.level}</strong>Уровень
                 </div>
               </div>
-              <h2>Достижения</h2>
-              <div className="awards">
-                {progress.awards.length ? (
-                  progress.awards.map((a) => (
-                    <div key={a.id}>
-                      <Trophy />
-                      <span>
-                        <strong>{a.title}</strong>
-                        <small>
-                          {new Date(a.created_at).toLocaleDateString("ru")}
-                        </small>
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p>Завершите первую смену, чтобы получить достижение.</p>
-                )}
-              </div>
+              <Achievements progress={progress} openAttempt={openAttempt} />
               <article className="challenge">
-                <h2>Две проверки за 24 часа</h2>
+                <h2>Две ситуации — два решения</h2>
                 <p>
-                  Пройдите обе смены в режиме проверки после вступления.
-                  Награда: +20 баллов на 24 часа.
+                  После вступления получите зачёт по обеим проверкам за 24 часа.
+                  Старые зачёты не учитываются. Награда — 20 временных баллов на
+                  24 часа с момента выдачи, один раз.
+                </p>
+                <p>
+                  Награда временно повышает место в рейтинге. Когда срок
+                  истечёт, эти 20 баллов исчезнут. Основные баллы, уровень и
+                  оценки смен сохранятся.
+                </p>
+                <p className="muted">
+                  За две проверки можно набрать до 200 основных баллов. С
+                  наградой испытания — до 220 в рейтинге.
                 </p>
                 {progress.challenge ? (
                   <p>
@@ -559,31 +562,34 @@ function App() {
                   {new Date(b.expires_at).toLocaleString("ru")}
                 </p>
               ))}
-              <h2>Компетенции</h2>
-              <p className="muted">
-                До пяти последних завершённых попыток каждого сценария, отдельно
-                по режиму и версии.
-              </p>
-              {!progress.competencies.length && (
-                <p>Пока недостаточно данных: завершите смену.</p>
+              {progress.local_demo && (
+                <details className="result-details">
+                  <summary>Ускоренная демонстрация временных баллов</summary>
+                  <p>
+                    Только на локальном стенде: 20 баллов на 90 секунд, один раз
+                    на профиль. Через 30 секунд появится предупреждение, через
+                    90 баллы исчезнут. Обычное испытание по-прежнему длится
+                    сутки.
+                  </p>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void run(async () =>
+                        setProgress(
+                          await api<Progress>("/demo/bonus-expiry", "POST", {}),
+                        ),
+                      )
+                    }
+                  >
+                    Показать истечение за 90 секунд
+                  </button>
+                  <p>
+                    Повторное нажатие не выдаёт новую награду и не продлевает
+                    срок.
+                  </p>
+                </details>
               )}
-              {progress.competencies.map((c, i) => (
-                <article className="competency" key={i}>
-                  <span>
-                    <b>{c.name}</b>
-                    <small>
-                      {c.scenario === "service"
-                        ? "Сервис и свободный проход"
-                        : "Багаж без владельца"}{" "}
-                      · {c.mode === "train" ? "Обучение" : "Проверка"} · версия{" "}
-                      {c.version} · попыток: {c.attempts}
-                    </small>
-                  </span>
-                  <strong className={c.critical ? "orange" : ""}>
-                    {c.critical ? "Критическая ошибка" : c.percent + "%"}
-                  </strong>
-                </article>
-              ))}
+              <Competencies progress={progress} openAttempt={openAttempt} />
               {!!progress.practice_focus?.length && (
                 <section
                   className="practice-options"
@@ -781,14 +787,20 @@ function App() {
                 <input
                   value={name}
                   maxLength={40}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setProfileSaved(false);
+                  }}
                 />
               </label>
               <label>
                 Портрет
                 <select
                   value={portrait}
-                  onChange={(e) => setPortrait(e.target.value)}
+                  onChange={(e) => {
+                    setPortrait(e.target.value);
+                    setProfileSaved(false);
+                  }}
                 >
                   <option value="conductor_card">Проводник</option>
                   <option value="chief_card">Начальник поезда</option>
@@ -800,16 +812,34 @@ function App() {
                 onClick={() =>
                   void run(async () => {
                     setMe(await api<Me>("/me", "PATCH", { name, portrait }));
-                    setPage("scenarios");
+                    setProfileSaved(true);
                   })
                 }
               >
                 Сохранить
               </button>
+              {profileSaved && <p role="status">Профиль сохранён.</p>}
               <p>
                 {me.profile.brigade} · Депо {me.profile.depot} ·
                 Демонстрационные данные
               </p>
+              <p>
+                Псевдонимы могут совпадать. Профили различаются по уникальному
+                номеру. Бригада и депо заданы для демонстрации рейтинга; менять
+                их здесь нельзя. Портрет нужен только для оформления профиля.
+              </p>
+              {progress && (
+                <>
+                  <p>
+                    Основные баллы: {progress.permanent} · Временные:{" "}
+                    {progress.bonus} · Уровень: {progress.level}
+                  </p>
+                  <button onClick={() => setPage("progress")}>
+                    Навыки и история смен
+                  </button>
+                  <Achievements progress={progress} openAttempt={openAttempt} />
+                </>
+              )}
               <small>Номер профиля: {me.profile.id}</small>
               <p className="footnote">
                 Профиль доступен в этом браузере. После очистки данных сайта или
