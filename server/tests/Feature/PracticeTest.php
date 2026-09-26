@@ -191,10 +191,12 @@ final class PracticeTest extends TestCase
         foreach (['А', str_repeat('А', 41)] as $name) {
             $this->patchJson('/api/v1/me', ['name' => $name, 'portrait' => 'chief_card'])->assertUnprocessable();
         }
-        foreach (['Ан', str_repeat('А', 40)] as $name) {
+        $profileCount = DB::table('profiles')->count();
+        foreach (['Ан', str_repeat('А', 40), "x'); DELETE FROM profiles; --", '<img src=x onerror=alert(1)>'] as $name) {
             $this->patchJson('/api/v1/me', ['name' => $name, 'portrait' => 'chief_card'])->assertOk()->assertJsonPath('profile.name', $name);
             $this->getJson('/api/v1/bootstrap')->assertOk()->assertJsonPath('profile.id', $this->profile)->assertJsonPath('profile.portrait', 'chief_card')->assertJsonPath('profile.name', $name);
         }
+        self::assertSame($profileCount, DB::table('profiles')->count());
         $this->patchJson('/api/v1/me', ['name' => 'Тест', 'portrait' => '../../secret'])->assertUnprocessable();
     }
 
