@@ -1,0 +1,11 @@
+[Unit]
+Description=Renew the VSM demonstration HTTPS certificate
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/vsm-hackathon
+ExecStart=/bin/bash /opt/vsm-hackathon/scripts/certificates.sh renew
+TimeoutStartSec=15min

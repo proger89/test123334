@@ -11,7 +11,45 @@ bash scripts/server.sh status
 
 Скрипт последовательно собирает сервер и интерфейс, выполняет миграции и ждёт готовности. Проект называется `vsm-hackathon-demo`, база использует отдельный постоянный том. Другие Docker-проекты не затрагиваются. Порт БД наружу не публикуется. Службы автоматически запускаются после перезагрузки Docker. Память служб и размер журналов ограничены в `compose.server.yaml`; пул PHP запускает до трёх процессов.
 
-Стенд работает по HTTP. Для персональных данных и рабочего использования необходимо настроить HTTPS и `SESSION_SECURE_COOKIE=true`. На этом сервере порт 443 занят другим приложением. Настройка домена и перенос существующих служб в эту поставку не входят.
+Защищённый адрес стенда: https://185.173.147.205:8443/. На порту 443 работает VPN Amnezia, поэтому тренажёр использует 8443. Ссылка без `:8443` обращается к VPN и может вызвать ошибку сертификата. Обычный HTTP перенаправляет на правильный адрес. Если браузер принудительно заменяет HTTP на HTTPS до обращения к серверу, откройте защищённую ссылку целиком.
+
+## HTTPS на сервере Aeza
+
+Конфигурация рассчитана на адрес `185.173.147.205`, каталог `/opt/vsm-hackathon` и свободный порт 8443. Для другого сервера измените IP в `infra/nginx.tls.conf` и `scripts/certificates.sh`, а также рабочий каталог службы. Исходный локальный запуск на порту 8180 остаётся по HTTP.
+
+Сертификат Let's Encrypt подтверждает IP-адрес. Он действует шесть дней; Certbot 5.8.0 закреплён по digest. Проверка продления запускается четыре раза в сутки, а пропущенный из-за выключения сервера запуск выполняется после включения. Порт 80 должен оставаться доступен для проверки владения адресом. Закрытый ключ хранится в `runtime/letsencrypt`, вне Git. Учётная запись центра сертификации создаётся без электронной почты: контролируйте состояние службы и срок сертификата.
+
+Первая настройка выполняется от root после обычного запуска приложения:
+
+```bash
+cd /opt/vsm-hackathon
+install -d -m 700 /opt/vsm-backups
+cp -p .env /opt/vsm-backups/before-https.env
+mkdir -p runtime/acme
+docker compose -p vsm-hackathon-demo -f compose.yaml -f compose.server.yaml -f compose.acme.yaml up -d --no-deps --wait web
+bash scripts/certificates.sh issue
+# Продолжайте только после успешного выпуска сертификата.
+sed -i 's|^APP_URL=.*|APP_URL=https://185.173.147.205:8443|' .env
+sed -i 's|^SESSION_SECURE_COOKIE=.*|SESSION_SECURE_COOKIE=true|' .env
+touch runtime/tls.enabled
+docker compose -p vsm-hackathon-demo -f compose.yaml -f compose.server.yaml -f compose.tls.yaml up -d --no-deps --wait api worker web
+install -m 644 infra/vsm-certificates.service infra/vsm-certificates.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now vsm-certificates.timer
+bash scripts/certificates.sh test
+curl --fail https://185.173.147.205:8443/api/health/ready
+```
+
+`certificates.sh test` проверяет продление через испытательный центр сертификации, не заменяя рабочий сертификат. Затем проверяет конфигурацию Nginx и перечитывает действующий сертификат. Обычное продление также проверяет конфигурацию перед перечитыванием. При ошибке Nginx продолжает обслуживать подключения со старым сертификатом; служба завершается с ошибкой, следующий запуск повторит попытку. Это не заменяет внешний контроль доступности.
+
+```bash
+systemctl list-timers vsm-certificates.timer
+systemctl status vsm-certificates.service
+journalctl -u vsm-certificates.service --since today
+bash scripts/server.sh status
+```
+
+Откат только HTTPS: остановите таймер `systemctl disable --now vsm-certificates.timer`, восстановите `.env` из копии перед настройкой, удалите только файл-маркер `runtime/tls.enabled`, затем пересоздайте `api worker web` с двумя исходными Compose-файлами. Сертификаты, базу и тома не удаляйте. Сайт вернётся на HTTP; ошибка при обращении к VPN через HTTPS без порта останется. Из-за защищённых cookie браузеру после такого отката может понадобиться новый профиль; сохранённые результаты остаются в базе.
 
 ## Обновление и сохранение данных
 

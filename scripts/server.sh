@@ -16,6 +16,9 @@ if ! grep -q '^EDITOR_ACCESS_CODE=' .env; then
   printf '\nEDITOR_ACCESS_CODE=%s\n' "$(openssl rand -hex 24)" >> .env
 fi
 compose=(docker compose -p vsm-hackathon-demo -f compose.yaml -f compose.server.yaml)
+if [[ -f runtime/tls.enabled ]]; then
+  compose+=(-f compose.tls.yaml)
+fi
 case "${1:-start}" in
   start)
     "${compose[@]}" build api
