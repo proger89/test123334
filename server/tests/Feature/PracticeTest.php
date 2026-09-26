@@ -117,7 +117,13 @@ final class PracticeTest extends TestCase
     {
         $source = $this->source();
         $a = $this->exercise($source, 'unattended');
-        $this->postJson('/api/v1/attempts/'.$source['id'].'/practice', ['request_id' => (string) Str::uuid(), 'exercise_id' => 'unattended'])->assertConflict();
+        $retryBody = ['request_id' => (string) Str::uuid(), 'exercise_id' => 'unattended'];
+        $conflict = $this->postJson('/api/v1/attempts/'.$source['id'].'/practice', $retryBody)
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'active_attempt')
+            ->assertJsonPath('error.active_attempt_id', $a['id'])
+            ->json();
+        self::assertSame($conflict, $this->postJson('/api/v1/attempts/'.$source['id'].'/practice', $retryBody)->assertConflict()->json());
         self::assertSame($a['id'], app(AttemptService::class)->create($this->profile, 'service', 'check', true)['id']);
         $a = $this->act($a, 'move');
         self::assertFalse($a['result']['passed']);

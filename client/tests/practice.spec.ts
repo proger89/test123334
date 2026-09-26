@@ -249,6 +249,10 @@ test("TC004 TC006 TC008 TC016 переключение, реальная про�
     .getByRole("button", { name: /Вернуться к пассажиру с подтверждённой/ })
     .click();
   await expect(page.getByText("Незачёт", { exact: true })).toBeVisible();
+  await page
+    .locator("summary")
+    .filter({ hasText: "Решения и последствия" })
+    .click();
   const event = page.locator(".event").filter({
     has: page.getByRole("heading", { name: "Время истекло", exact: true }),
   });
@@ -286,7 +290,7 @@ test("TC007 пауза 10 секунд и возвращение после за
   await returned
     .locator(".history")
     .filter({ hasText: "Похожая вещь" })
-    .first()
+    .filter({ hasText: "Проверка" })
     .click();
   await expect(
     returned.getByText("Критическая ошибка", { exact: true }),

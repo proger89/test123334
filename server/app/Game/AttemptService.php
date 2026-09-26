@@ -79,10 +79,15 @@ final class AttemptService
                     $selected = $option;
                 }
             }
+            $activeAttemptId = DB::table('attempts')->where('profile_id', $profile)->where('status', '!=', 'completed')->value('id');
             if ($selected === null) {
                 $response = [409, ['error' => ['code' => 'practice_unavailable', 'message' => 'Это упражнение не рекомендовано по выбранной смене.']]];
-            } elseif (DB::table('attempts')->where('profile_id', $profile)->where('status', '!=', 'completed')->exists()) {
-                $response = [409, ['error' => ['code' => 'active_attempt', 'message' => 'Сначала завершите текущее прохождение. Его можно открыть в разделе «Сценарии».']]];
+            } elseif ($activeAttemptId !== null) {
+                $response = [409, ['error' => [
+                    'code' => 'active_attempt',
+                    'message' => 'У вас уже есть незавершённое прохождение. Продолжите его, прежде чем начинать новое упражнение.',
+                    'active_attempt_id' => (string) $activeAttemptId,
+                ]]];
             } else {
                 $response = [200, $this->createPractice($profile, $sourceId, $selected)];
             }

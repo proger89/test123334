@@ -145,7 +145,7 @@ export function GameScreen({
             </>
           )}
           <button
-            className="exit"
+            className="exit finish-button"
             disabled={busy}
             onClick={() => command("finish")}
           >

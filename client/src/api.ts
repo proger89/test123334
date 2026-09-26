@@ -135,6 +135,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public state?: Attempt,
+    public code?: string,
+    public activeAttemptId?: string,
   ) {
     super(message);
   }
@@ -186,6 +188,10 @@ export async function api<T>(
                   ? "Сервис временно недоступен. Попробуйте ещё раз."
                   : data.error?.message || "Не удалось выполнить запрос",
       data.state,
+      typeof data.error?.code === "string" ? data.error.code : undefined,
+      typeof data.error?.active_attempt_id === "string"
+        ? data.error.active_attempt_id
+        : undefined,
     );
   if (data.csrf) csrf = data.csrf;
   return data as T;

@@ -2,8 +2,9 @@ import { EditorScreen } from "./editor/EditorScreen";
 import { poll } from "./poll";
 import { GameScreen } from "./GameScreen";
 import { requestId } from "./requestId";
-import { PracticeOptions, PracticeScreen } from "./PracticeScreen";
-import { useEffect, useState } from "react";
+import { PracticeScreen } from "./PracticeScreen";
+import { ResultsScreen } from "./ResultsScreen";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   MessageCircle,
@@ -13,8 +14,6 @@ import {
   GraduationCap,
   ChevronRight,
   Play,
-  CheckCircle,
-  AlertTriangle,
   ArrowLeft,
   FilePenLine,
 } from "lucide-react";
@@ -31,6 +30,7 @@ import {
 import "./style.css";
 const img = (name: string) => "/graphics/crops/" + name + ".png";
 function App() {
+  const practiceTrigger = useRef<HTMLElement | null>(null);
   const [me, setMe] = useState<Me | null>(null),
     [scenarios, setScenarios] = useState<Scenario[]>([]),
     [page, setPageState] = useState(
@@ -50,6 +50,7 @@ function App() {
     [scope, setScope] = useState("brigade"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
+    [activeConflict, setActiveConflict] = useState<string | null>(null),
     [hint, setHint] = useState(false),
     [name, setName] = useState(""),
     [portrait, setPortrait] = useState("conductor_card");
@@ -78,6 +79,14 @@ function App() {
     try {
       await work();
     } catch (e) {
+      if (
+        e instanceof ApiError &&
+        e.code === "active_attempt" &&
+        e.activeAttemptId
+      ) {
+        setActiveConflict(e.activeAttemptId);
+        return;
+      }
       if (e instanceof ApiError && e.state) accept(e.state);
       setError(e instanceof Error ? e.message : "Ошибка соединения");
     } finally {
@@ -103,6 +112,7 @@ function App() {
         accept(a);
         setThread(a.threads[0].id);
         if (location.hash !== "#editor") setPage("game");
+        if (a.status === "completed") await refresh();
       }
     });
   }, []);
@@ -120,7 +130,7 @@ function App() {
     );
   }, [attempt?.id, attempt?.status]);
   useEffect(() => {
-    if (!me) return;
+    if (!me || !["progress", "notifications", "ranking"].includes(page)) return;
     void run(async () => {
       if (page === "progress") setProgress(await api<Progress>("/me/progress"));
       if (page === "notifications")
@@ -154,8 +164,10 @@ function App() {
     window.scrollTo(0, 0);
   }, [page, attempt?.id, attempt?.status]);
   useEffect(() => {
-    if (!selected) return;
-    const previous = document.activeElement as HTMLElement | null;
+    if (!selected && !activeConflict) return;
+    const previous = activeConflict
+      ? practiceTrigger.current
+      : (document.activeElement as HTMLElement | null);
     const modal = document.querySelector<HTMLElement>('[role="dialog"]');
     const controls = () =>
       Array.from(
@@ -165,7 +177,10 @@ function App() {
       );
     controls()[0]?.focus();
     const handle = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busy) setSelected(null);
+      if (event.key === "Escape" && !busy) {
+        setSelected(null);
+        setActiveConflict(null);
+      }
       if (event.key !== "Tab") return;
       const items = controls();
       if (event.shiftKey && document.activeElement === items[0]) {
@@ -181,7 +196,13 @@ function App() {
       document.removeEventListener("keydown", handle);
       previous?.focus();
     };
-  }, [selected, busy]);
+  }, [selected, activeConflict, busy]);
+  useEffect(() => {
+    if (!error) return;
+    const alert = document.querySelector<HTMLElement>('[role="alert"]');
+    alert?.scrollIntoView({ block: "center" });
+    alert?.focus({ preventScroll: true });
+  }, [error]);
   const start = () =>
     void run(async () => {
       if (!selected) return;
@@ -220,9 +241,10 @@ function App() {
       setThread(next.threads[0].id);
       await refresh();
     });
-  const startPractice = (sourceId: string, exerciseId: string) =>
+  const startPractice = (sourceId: string, exerciseId: string) => {
+    // Disabling the trigger during the request removes its focus in Chrome.
+    practiceTrigger.current = document.activeElement as HTMLElement | null;
     void run(async () => {
-      setPage("game");
       const next = await api<Attempt>(
         "/attempts/" + sourceId + "/practice",
         "POST",
@@ -233,8 +255,11 @@ function App() {
       );
       accept(next);
       setThread(next.threads[0].id);
+      setPage("game");
+      setHint(false);
       await refresh();
     });
+  };
   const current =
     attempt?.threads.find((t) => t.id === thread) || attempt?.threads[0];
   const seconds =
@@ -351,7 +376,7 @@ function App() {
           )}
 
           {error && (
-            <div className="error" role="alert">
+            <div className="error" role="alert" tabIndex={-1}>
               {error}
               <button onClick={() => setError("")}>Закрыть</button>
             </div>
@@ -447,114 +472,18 @@ function App() {
               />
             )}
           {page === "game" && attempt?.result && !attempt.practice && (
-            <section className="results">
-              <p className="eyebrow">
-                Разбор смены ·{" "}
-                {attempt.mode === "train" ? "Обучение" : "Проверка"}
-              </p>
-              <h1>
-                {attempt.result.passed
-                  ? "Смена пройдена"
-                  : "Есть что отработать"}
-              </h1>
-              <div className="result-score">
-                {attempt.result.passed ? <CheckCircle /> : <AlertTriangle />}
-                <b>{attempt.result.score}/100</b>
-                <span>
-                  {attempt.result.passed ? "Зачёт" : "Незачёт"}
-                  {attempt.result.critical ? " · Критическая ошибка" : ""}
-                </span>
-              </div>
-              <p>
-                {attempt.mode === "train"
-                  ? "Это обучение: рейтинговые баллы не начисляются."
-                  : "В рейтинг входит лучший зачтённый результат этой смены."}
-              </p>
-              <div className="competency-row">
-                {Object.entries(attempt.result.competencies).map(([key, c]) => (
-                  <div key={key}>
-                    <strong>{key}</strong>
-                    <p>
-                      {c.percent === null
-                        ? "Критическая ошибка"
-                        : c.percent + "%"}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <PracticeOptions
-                options={attempt.practice_options || []}
-                busy={busy}
-                start={(id) => startPractice(attempt.id, id)}
-              />
-              <h2>Что получилось, а что стоит повторить</h2>
-              <div className="checklist">
-                {Object.entries(attempt.result.rubric).map(([key, r]) => (
-                  <p key={key}>
-                    {attempt.result!.checks[key] ? (
-                      <CheckCircle className="green" size={18} />
-                    ) : (
-                      <AlertTriangle className="orange" size={18} />
-                    )}{" "}
-                    {r.label}
-                    {attempt.result!.checks[key]
-                      ? " — выполнено"
-                      : " — стоит повторить"}
-                  </p>
-                ))}
-              </div>
-              <h2>Решения и последствия</h2>
-              {attempt.result.events.map((e, i) => (
-                <article className="event" key={i}>
-                  <span>{i + 1}</span>
-                  <div>
-                    <h3>{e.action}</h3>
-                    <p>{e.explanation}</p>
-                    <small>
-                      <a
-                        href={
-                          "/sources/situations.pdf#page=" +
-                          (e.source.includes("41")
-                            ? 16
-                            : e.source.includes("14")
-                              ? 7
-                              : 8)
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {e.source}
-                      </a>{" "}
-                      · Лояльность {e.loyalty} · Безопасность {e.safety}
-                    </small>
-                  </div>
-                </article>
-              ))}
-              <div className="game-tools">
-                <button
-                  className="primary"
-                  onClick={() => {
-                    setSelected(
-                      scenarios.find((s) => s.id === attempt.scenario)!,
-                    );
-                    setMode("train");
-                  }}
-                >
-                  Повторить обучение
-                </button>
-                <button onClick={() => setPage("progress")}>
-                  Мой прогресс
-                </button>
-                <button onClick={() => setPage("scenarios")}>
-                  Другие сценарии
-                </button>
-              </div>
-              <p className="footnote">
-                Результат учебной модели не является оценкой профессиональной
-                пригодности. Полный алгоритм транспортной безопасности требует
-                уточнения у заказчика.
-              </p>
-            </section>
+            <ResultsScreen
+              attempt={attempt}
+              result={attempt.result}
+              busy={busy}
+              startPractice={(id) => startPractice(attempt.id, id)}
+              repeat={() => {
+                setSelected(scenarios.find((s) => s.id === attempt.scenario)!);
+                setMode("train");
+              }}
+              openProgress={() => setPage("progress")}
+              openScenarios={() => setPage("scenarios")}
+            />
           )}
           {page === "progress" && progress && (
             <section className="results">
@@ -711,6 +640,7 @@ function App() {
                 <button
                   className="history"
                   key={h.id}
+                  disabled={busy}
                   onClick={() =>
                     void run(async () => {
                       accept(await api<Attempt>("/attempts/" + h.id));
@@ -889,7 +819,41 @@ function App() {
           )}
         </main>
       </div>
-      {selected && (
+      {activeConflict && (
+        <div className="modal-backdrop">
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="active-attempt-title"
+            aria-describedby="active-attempt-description"
+          >
+            <h2 id="active-attempt-title">Есть незавершённое прохождение</h2>
+            <p id="active-attempt-description">
+              Вы уже начали смену или упражнение. Продолжите его или завершите
+              на его экране, а затем выберите новое.
+            </p>
+            <p>Ваши решения сохранены.</p>
+            <div className="game-tools">
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() => {
+                  const id = activeConflict;
+                  setActiveConflict(null);
+                  openAttempt(id);
+                }}
+              >
+                Продолжить прохождение
+              </button>
+              <button disabled={busy} onClick={() => setActiveConflict(null)}>
+                Остаться на этой странице
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {selected && !activeConflict && (
         <div className="modal-backdrop">
           <section
             className="modal"

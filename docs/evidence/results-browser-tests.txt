@@ -1,0 +1,25 @@
+
+Running 17 tests using 1 worker
+
+(node:40144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 client\tests\practice.spec.ts:24:1 › ошибка → упражнение → сохранение → самостоятельная проверка; TC005 TC017 TC020 (1.6s)
+  ok  2 client\tests\practice.spec.ts:114:3 › упражнение на экране 390 (893ms)
+  ok  3 client\tests\practice.spec.ts:114:3 › упражнение на экране 768 (1.1s)
+  ok  4 client\tests\practice.spec.ts:153:1 › неверное обещание → объяснение → повтор упражнения (782ms)
+  ok  5 client\tests\practice.spec.ts:186:1 › TC001 TC002 TC012 профиль и прочтение уведомлений (552ms)
+  ok  6 client\tests\practice.spec.ts:210:1 › TC004 TC006 TC008 TC016 переключение, реальная просрочка и разбор (1.1m)
+  ok  7 client\tests\practice.spec.ts:267:1 › TC007 пауза 10 секунд и возвращение после закрытия вкладки (46.9s)
+  ok  8 client\tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 390 (586ms)
+  ok  9 client\tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 1366 (656ms)
+  ok 10 client\tests\results.spec.ts:70:1 › незавершённое упражнение: видимое объяснение и возврат к сохранённой попытке (1.2s)
+first_useful_screen_ms=108
+  ok 11 client\tests\trainer.spec.ts:19:1 › две смены, сохранение, испытание, достижения и три рейтинга (22.5s)
+  ok 12 client\tests\trainer.spec.ts:56:1 › критическая ошибка, обучение, правильная проверка (959ms)
+  ok 13 client\tests\trainer.spec.ts:68:37 › экран 390 (737ms)
+  ok 14 client\tests\trainer.spec.ts:68:37 › экран 768 (746ms)
+  ok 15 client\tests\trainer.spec.ts:68:37 › экран 1366 (867ms)
+  ok 16 client\tests\trainer.spec.ts:81:1 › сравнение с макетом и клавиатура (669ms)
+  ok 17 client\tests\trainer.spec.ts:95:1 › понятное сообщение при потере связи и восстановление смены (1.8s)
+
+  17 passed (2.5m)

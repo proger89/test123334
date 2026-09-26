@@ -1,0 +1,36 @@
+name: vsm-hackathon-setup
+services:
+  setup:
+    image: php:8.4-fpm-bookworm@sha256:43e1ac38217031dbbecae60e84ccf8593722031559178d199bf56adb0145d5d0
+    working_dir: /setup
+    volumes:
+      - type: bind
+        source: ${SETUP_DIRECTORY:-.}
+        target: /setup
+    entrypoint: [php, -r]
+    command:
+      - |
+        if (file_exists('.env')) {
+            echo "Existing .env preserved. Ready for docker compose build.\n";
+            exit(0);
+        }
+        umask(0077);
+        $$settings = implode("\n", [
+            'APP_NAME=VSM',
+            'APP_ENV=local',
+            'APP_KEY=base64:' . base64_encode(random_bytes(32)),
+            'APP_URL=http://127.0.0.1:8180',
+            'DB_PASSWORD=' . bin2hex(random_bytes(24)),
+            'EDITOR_ACCESS_CODE=' . bin2hex(random_bytes(24)),
+            'SESSION_SECURE_COOKIE=false',
+            '',
+        ]);
+        $$file = fopen('.env', 'x');
+        if ($$file === false) { exit(1); }
+        $$written = fwrite($$file, $$settings);
+        fclose($$file);
+        if ($$written !== strlen($$settings)) {
+            fwrite(STDERR, "Could not write complete .env. Check disk space before retrying.\n");
+            exit(1);
+        }
+        echo "Local .env created. Ready for docker compose build.\n";

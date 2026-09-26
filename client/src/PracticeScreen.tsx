@@ -18,7 +18,7 @@ export function PracticeOptions({ options, busy, start }: OptionsProps) {
   return (
     <section className="practice-options" aria-label="Рекомендуемые упражнения">
       <p className="eyebrow">Следующий шаг</p>
-      <h2>Отработайте то, что не получилось</h2>
+      <h2>Короткие упражнения</h2>
       <p>
         Короткие ситуации по разбору этой смены. Каждая займёт около двух минут.
       </p>
@@ -253,7 +253,11 @@ export function PracticeScreen({
                 Пауза
               </button>
             )}
-            <button disabled={busy} onClick={() => command("finish")}>
+            <button
+              className="finish-button"
+              disabled={busy}
+              onClick={() => command("finish")}
+            >
               Завершить упражнение
             </button>
           </div>

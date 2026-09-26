@@ -435,6 +435,18 @@ main {
   border: 0;
   color: #7987a0;
 }
+.finish-button {
+  background: #c62f3e;
+  border: 1px solid #c62f3e;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+}
+.finish-button:hover {
+  background: #a92130;
+  border-color: #a92130;
+  color: white;
+}
 .hint,
 .paused {
   background: #edf4ff;
@@ -644,6 +656,100 @@ progress::-webkit-progress-value {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.shift-results {
+  max-width: 1040px;
+}
+.shift-results h1 {
+  margin-bottom: 20px;
+}
+.shift-results .result-score {
+  margin-bottom: 12px;
+  padding-bottom: 16px;
+}
+.result-caption {
+  color: #53647e;
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+.critical-result {
+  color: #b42332;
+  font-weight: 600;
+  margin: 4px 0;
+}
+.result-review {
+  display: grid;
+  gap: 16px;
+  margin: 28px 0;
+}
+.review-group {
+  border: 1px solid #dfe5ee;
+  border-radius: 14px;
+  background: white;
+  padding: 22px 24px;
+}
+.review-group h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+.review-group h2 svg {
+  flex-shrink: 0;
+  width: 20px;
+}
+.review-group h2 span,
+.result-details summary span {
+  color: #53647e;
+  font-size: 14px;
+  font-weight: 400;
+  margin-left: auto;
+}
+.review-success h2 svg {
+  color: #087d57;
+}
+.review-repeat h2 svg {
+  color: #ac6000;
+}
+.review-group ul {
+  padding-left: 24px;
+  margin: 0;
+}
+.review-group li + li {
+  margin-top: 8px;
+}
+.review-group p {
+  margin: 0;
+  color: #53647e;
+}
+.result-details {
+  border-bottom: 1px solid #dfe5ee;
+  padding: 18px 0;
+}
+.result-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 18px;
+}
+summary:focus-visible {
+  outline: 3px solid #1772ff;
+  outline-offset: 4px;
+}
+.result-details[open] summary {
+  margin-bottom: 20px;
+}
+.result-details .event:last-child {
+  border: 0;
+  padding-bottom: 0;
+}
+@media (max-width: 600px) {
+  .review-group {
+    padding: 18px 16px;
+  }
+  .review-group h2 {
+    font-size: 18px;
+  }
 }
 .green {
   color: #0aa575;
