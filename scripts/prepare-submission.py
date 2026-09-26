@@ -50,7 +50,7 @@ def main() -> None:
         "Репозиторий: https://github.com/proger89/test123334\n"
         "Материалы: https://disk.yandex.ru/d/kjXwaeWpAfAmiw\n\n"
         "01 — тексты для пяти полей формы. Решение через сайт организаторов не отправлено.\n"
-        "02 — исходный код с графикой и файлами Docker. Распакуйте VSM, запустите Docker Desktop и откройте терминал в папке VSM. Подходит Windows PowerShell 5.1. Выполните по очереди:\n\ndocker compose -f compose.setup.yaml run --rm setup\ndocker compose pull db\ndocker compose build api web\ndocker compose up --no-build -d --wait web worker\n\nОткройте http://127.0.0.1:8180. Подробности — в README.md.\n"
+        "02 — исходный код с графикой и файлами Docker. Распакуйте VSM, запустите Docker Desktop и откройте терминал в папке VSM. Для Windows используйте PowerShell 7.6.6; на этой версии команда подтвердила запуск. Выполните по очереди:\n\ndocker compose -f compose.setup.yaml run --rm setup\ndocker compose pull db\ndocker compose build api web\ndocker compose up --no-build -d --wait web worker\n\nОткройте http://127.0.0.1:8180. Подробности — в README.md.\n"
         "03 — документация: архитектура и схемы, OpenAPI, путь пользователя, проверки, сценарий защиты, ограничения и описание использования ИИ.\n"
         "04 и 05 — техническое задание в PDF и DOCX. Дополнения по интерфейсу и редактору находятся в документации.\n"
         "06 — версия кода, размеры и контрольные суммы файлов.\n\n"
