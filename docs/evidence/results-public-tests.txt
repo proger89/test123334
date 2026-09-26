@@ -1,0 +1,10 @@
+Running 4 tests using 1 worker
+
+(node:42012) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 client\tests\https.spec.ts:3:1 › HTTPS: доверенный сертификат, переход с HTTP и сохранение профиля (2.9s)
+  ok 2 client\tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 390 (4.1s)
+  ok 3 client\tests\results.spec.ts:21:3 › понятный разбор и заметное завершение на ширине 1366 (4.1s)
+  ok 4 client\tests\results.spec.ts:70:1 › незавершённое упражнение: видимое объяснение и возврат к сохранённой попытке (7.8s)
+
+  4 passed (19.5s)
