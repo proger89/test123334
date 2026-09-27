@@ -8,7 +8,8 @@ async function unfinishedService(page: Page) {
     .getByRole("button")
     .click();
   await page.getByRole("button", { name: "Начать смену", exact: true }).click();
-  await page.getByRole("button", { name: "Завершить", exact: true }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Прервать смену", exact: true }).click();
 }
 
 const exercise = (page: Page, title: string) =>
@@ -31,11 +32,15 @@ for (const width of [390, 1366]) {
     await page
       .getByRole("button", { name: "Начать смену", exact: true })
       .click();
-    const finish = page.getByRole("button", { name: "Завершить", exact: true });
+    const finish = page.getByRole("button", { name: "Прервать смену", exact: true });
     await expect(finish).toHaveCSS("background-color", "rgb(198, 47, 62)");
     await page
       .getByRole("button", { name: /Прошу прощения за неудобство/ })
       .click();
+    page.once("dialog", dialog => dialog.dismiss());
+    await finish.click();
+    await expect(page.getByRole("button", { name: /Проверить доступные места/ })).toBeVisible();
+    page.once("dialog", dialog => dialog.accept());
     await finish.click();
     const good = page.getByRole("region", { name: /Что получилось/ });
     const repeat = page.getByRole("region", { name: /Что стоит повторить/ });
@@ -96,7 +101,8 @@ test("незавершённое упражнение: видимое объяс
     }),
   ).toBeVisible();
   await expect(page.getByText("Упражнение приостановлено")).toBeVisible();
-  await page.getByRole("button", { name: "Завершить упражнение" }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Прервать упражнение" }).click();
   await page.getByRole("button", { name: "К разбору смены" }).click();
   await exercise(page, "Что сделать в первую очередь").click();
   await expect(
@@ -105,5 +111,6 @@ test("незавершённое упражнение: видимое объяс
       exact: true,
     }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Завершить упражнение" }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Прервать упражнение" }).click();
 });

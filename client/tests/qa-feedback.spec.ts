@@ -4,7 +4,7 @@ async function startSecurity(page: Page) {
   await page.getByRole("button", { name: "Сценарии", exact: true }).click();
   await page
     .locator(".scenario-list article")
-    .filter({ hasText: "Похожая вещь" })
+    .filter({ hasText: "Багаж без владельца" })
     .getByRole("button")
     .click();
   await page.getByRole("button", { name: "Проверка", exact: true }).click();
@@ -24,15 +24,7 @@ test("новый результат не скрыт старой ошибкой,
   ).toBeVisible();
   await startSecurity(page);
   await page.getByRole("button", { name: /По связи сообщить/ }).click();
-  await page
-    .getByRole("button", { name: /Не трогать вещь и предупредить/ })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Обязательные действия выполнены" }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Завершить обращение и открыть разбор" })
-    .click();
+  await page.getByRole("button", { name: /Не трогать вещь и предупредить/ }).click();
   await expect(page.getByText("100/100", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Прогресс", exact: true }).click();
   const safety = page

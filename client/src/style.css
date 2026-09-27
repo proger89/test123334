@@ -1162,6 +1162,17 @@ select {
 .achievement small { display:block; margin:10px 0; }
 .achievement.locked { background:#f2f5f9; color:#53647b; }
 .achievement.earned>svg { color:#b87300; }
+.achievement.earned { border:2px solid #d89b28; background:#fffaf0; }
+.achievement.locked>svg { color:#7b8795; opacity:.55; }
+.achievement.locked { border-style:dashed; }
+.history { display:grid; grid-template-columns:minmax(0,1fr) 13rem 24px; gap:20px; text-align:left; }
+.history>b { text-align:right; }
+.build-notice { margin:20px 0; font-size:14px; }
+@media(max-width:600px) {
+ .history { grid-template-columns:minmax(0,1fr) 24px; gap:8px; }
+ .history>b { grid-column:1; text-align:left; }
+ .history>svg { grid-column:2; grid-row:1 / span 2; }
+}
 .skill-card { border-bottom:1px solid #d7e1ef; padding:12px 0 20px; }
 .skill-card details { margin-top:14px; }
 .skill-card summary { cursor:pointer; color:#125bc5; }

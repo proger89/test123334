@@ -223,7 +223,7 @@ final class PracticeTest extends TestCase
     public function test_tc010_reward_date_and_count_survive_duplicate_completion(): void
     {
         $a = app(AttemptService::class)->create($this->profile, 'security', 'train', true);
-        foreach (['warn', 'notify', 'complete'] as $action) {
+        foreach (['warn', 'notify'] as $action) {
             $a = $this->act($a, $action, 'security');
         }
         $before = DB::table('awards')->where('profile_id', $this->profile)->get()->toJson();

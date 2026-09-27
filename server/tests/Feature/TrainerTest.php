@@ -43,7 +43,7 @@ final class TrainerTest extends TestCase
     {
         $a = $this->start($scenario, $mode);
         if ($scenario === 'security') {
-            foreach (['warn', 'notify', 'complete'] as $action) {
+            foreach (['warn', 'notify'] as $action) {
                 [$code,$a] = $this->act($a, $action);
                 self::assertSame(200, $code);
             }
@@ -67,6 +67,9 @@ final class TrainerTest extends TestCase
 
     public function test_latest_success_is_separate_from_historical_critical_failure(): void
     {
+        $this->complete();
+        $this->complete();
+        $this->complete();
         $failed = $this->start();
         $this->act($failed, 'move');
         $success = $this->complete();
@@ -78,8 +81,54 @@ final class TrainerTest extends TestCase
         self::assertFalse($safety['latest_critical']);
         self::assertSame(100, $safety['latest_percent']);
         self::assertSame($success['id'], $safety['latest_attempt_id']);
-        self::assertCount(2, $summary['history']);
+        self::assertCount(5, $summary['history']);
         self::assertSame(100, $summary['permanent']);
+    }
+
+    public function test_automatic_completion_is_atomic_and_replayable_in_both_orders(): void
+    {
+        foreach (['train', 'check'] as $mode) {
+            foreach ([['warn', 'notify'], ['notify', 'warn']] as [$first, $second]) {
+                $a = $this->start(mode: $mode);
+                [, $a] = $this->act($a, $first);
+                $key = (string) Str::uuid();
+                $response = $this->act($a, $second, key: $key);
+                self::assertSame(200, $response[0]);
+                self::assertSame('completed', $response[1]['status']);
+                self::assertTrue($response[1]['result']['passed']);
+                self::assertSame(100, $response[1]['result']['score']);
+                self::assertCount(3, $response[1]['result']['events']);
+                self::assertSame($response, $this->act($a, $second, key: $key));
+            }
+        }
+        self::assertSame(100, app(Progress::class)->summary($this->profile)['permanent']);
+    }
+
+    public function test_old_ready_attempt_completes_on_load_but_paused_waits(): void
+    {
+        $a = $this->start(mode: 'train');
+        $row = DB::table('attempts')->where('id', $a['id'])->first();
+        $state = AttemptState::restore($row->state);
+        $scenario = app(ScenarioCatalog::class)->get('security', '1');
+        $engine = app(\App\Game\Engine::class);
+        $engine->act($state, $scenario, 'security', 'warn', microtime(true));
+        $engine->act($state, $scenario, 'security', 'notify', microtime(true));
+        $state->status = \App\Game\AttemptStatus::Paused;
+        DB::table('attempts')->where('id', $a['id'])->update(['state' => $state->json(), 'status' => 'paused']);
+        $loaded = app(AttemptService::class)->load($this->profile, $a['id']);
+        self::assertSame('paused', $loaded['status']);
+        [$status, $resumed] = app(AttemptService::class)->command($this->profile, $a['id'], 'pause', [
+            'request_id' => (string) Str::uuid(), 'expected_revision' => $loaded['revision'], 'paused' => false,
+        ]);
+        self::assertSame(200, $status);
+        self::assertTrue($resumed['result']['passed']);
+
+        // Restore the pre-upgrade state to check a worker/read without a resume command.
+        $state->status = \App\Game\AttemptStatus::Active;
+        DB::table('attempts')->where('id', $a['id'])->update(['state' => $state->json(), 'status' => 'active']);
+        $loaded = app(AttemptService::class)->load($this->profile, $a['id']);
+        self::assertTrue($loaded['result']['passed']);
+        self::assertSame($loaded['revision'], app(AttemptService::class)->load($this->profile, $a['id'])['revision']);
     }
 
     public function test_achievement_catalog_includes_locked_items_and_immutable_source(): void

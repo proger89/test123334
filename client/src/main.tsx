@@ -1,3 +1,4 @@
+import { BuildNotice } from "./BuildNotice";
 import { Achievements, Competencies } from "./ProgressDetails";
 import { EditorScreen } from "./editor/EditorScreen";
 import { poll } from "./poll";
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import {
   api,
+  scenarioTitle,
   ApiError,
   type Attempt,
   type Me,
@@ -81,7 +83,14 @@ function App() {
   };
   const accept = (next: Attempt) =>
     setAttempt((old) =>
-      old?.id === next.id && old.revision > next.revision ? old : next,
+      old?.id === next.id && old.revision > next.revision
+        ? old
+        : {
+            ...next,
+            title: next.practice
+              ? next.title
+              : scenarioTitle(next.scenario, next.version, next.title),
+          },
     );
   const run = async (work: () => Promise<void>) => {
     setBusy(true);
@@ -115,7 +124,18 @@ function App() {
       setProgress(m.progress);
       setName(m.profile.name);
       setPortrait(m.profile.portrait);
-      setScenarios(await api<Scenario[]>("/scenarios"));
+      setScenarios(
+        (await api<Scenario[]>("/scenarios")).map((s) => ({
+          ...s,
+          title: scenarioTitle(s.id, s.version, s.title),
+          check: s.check
+            ? {
+                ...s.check,
+                title: scenarioTitle(s.id, s.check.version, s.check.title),
+              }
+            : undefined,
+        })),
+      );
       setNotices(await api<Notice[]>("/notifications"));
       if (m.active_attempt) {
         const a = await api<Attempt>("/attempts/" + m.active_attempt);
@@ -140,9 +160,14 @@ function App() {
     );
   }, [attempt?.id, attempt?.status]);
   useEffect(() => {
-    if (!me || !["progress", "notifications", "ranking"].includes(page)) return;
+    if (
+      !me ||
+      !["profile", "progress", "notifications", "ranking"].includes(page)
+    )
+      return;
     void run(async () => {
-      if (page === "progress") setProgress(await api<Progress>("/me/progress"));
+      if (page === "progress" || page === "profile")
+        setProgress(await api<Progress>("/me/progress"));
       if (page === "notifications")
         setNotices(await api<Notice[]>("/notifications"));
       if (page === "ranking")
@@ -154,8 +179,9 @@ function App() {
     return poll(
       async () => ({
         notices: await api<Notice[]>("/notifications"),
-        progress:
-          page === "progress" ? await api<Progress>("/me/progress") : null,
+        progress: ["progress", "profile"].includes(page)
+          ? await api<Progress>("/me/progress")
+          : null,
         ranks:
           page === "ranking"
             ? await api<Rank[]>("/leaderboard?scope=" + scope)
@@ -230,6 +256,13 @@ function App() {
   const command = (op: string, body: Record<string, unknown> = {}) =>
     void run(async () => {
       if (!attempt) return;
+      if (
+        op === "finish" &&
+        !window.confirm(
+          "Прервать прохождение? Оно завершится незачётом. Нажмите «Отмена», чтобы продолжить.",
+        )
+      )
+        return;
       const a = await api<Attempt>(
         "/attempts/" + attempt.id + "/" + op,
         "POST",
@@ -369,6 +402,10 @@ function App() {
           </div>
         </nav>
         <main>
+          <BuildNotice
+            dirty={editorDirty}
+            active={!!attempt && attempt.status !== "completed"}
+          />
           {(noticeError || gameError) && (
             <p className="error" role="status">
               {gameError || noticeError}
@@ -589,6 +626,19 @@ function App() {
                   </p>
                 </details>
               )}
+              {!progress.local_demo && (
+                <details>
+                  <summary>
+                    Как проверить истечение временных баллов за 90 секунд
+                  </summary>
+                  <p>
+                    Запустите проект на своём компьютере по README. На
+                    http://127.0.0.1:8180 откройте «Прогресс» → «Ускоренная
+                    демонстрация временных баллов». На этом сайте ускоренная
+                    выдача отключена.
+                  </p>
+                </details>
+              )}
               <Competencies progress={progress} openAttempt={openAttempt} />
               {!!progress.practice_focus?.length && (
                 <section
@@ -612,7 +662,7 @@ function App() {
                         <small>
                           {item.scenario === "service"
                             ? "Сервис и свободный проход"
-                            : "Похожая вещь — другое решение"}{" "}
+                            : "Багаж без владельца"}{" "}
                           · {item.mode === "check" ? "Проверка" : "Обучение"} ·
                           версия {item.version}
                         </small>
@@ -657,7 +707,7 @@ function App() {
                   <span>
                     {h.scenario === "service"
                       ? "Сервис и свободный проход"
-                      : "Похожая вещь — другое решение"}
+                      : "Багаж без владельца"}
                     <small>
                       {h.mode === "train" ? "Обучение" : "Проверка"} ·{" "}
                       {new Date(h.finished_at).toLocaleString("ru")}
@@ -838,6 +888,31 @@ function App() {
                     Навыки и история смен
                   </button>
                   <Achievements progress={progress} openAttempt={openAttempt} />
+                  <h2>Последние смены</h2>
+                  {progress.history.slice(0, 3).map((h) => (
+                    <button
+                      className="history"
+                      key={h.id}
+                      onClick={() => openAttempt(h.id)}
+                    >
+                      <span>
+                        {h.scenario === "service"
+                          ? "Сервис и свободный проход"
+                          : "Багаж без владельца"}
+                        <small>
+                          {new Date(h.finished_at).toLocaleString("ru")}
+                        </small>
+                      </span>
+                      <b>
+                        {h.result.score}/100 ·{" "}
+                        {h.result.passed ? "Зачёт" : "Незачёт"}
+                      </b>
+                      <ChevronRight />
+                    </button>
+                  ))}
+                  {!progress.history.length && (
+                    <p>Вы ещё не завершили ни одной смены.</p>
+                  )}
                 </>
               )}
               <small>Номер профиля: {me.profile.id}</small>

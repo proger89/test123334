@@ -5,7 +5,7 @@ const evidence = path.resolve(
   "../../tmp/browser-artifacts",
 );
 
-async function start(page: Page, scenario = "Похожая вещь", check = true) {
+async function start(page: Page, scenario = "Багаж без владельца", check = true) {
   await page.getByRole("button", { name: "Сценарии", exact: true }).click();
   await page
     .locator(".scenario-list article")
@@ -102,7 +102,7 @@ test("ошибка → упражнение → сохранение → сам�
     .getByRole("button", { name: /Не трогать вещь и предупредить/ })
     .click();
   await page.getByRole("button", { name: /По связи сообщить/ }).click();
-  await page.getByRole("button", { name: "Завершить обращение и открыть разбор" }).click();
+
   await expect(page.getByText("100/100", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Рекомендуемые упражнения" }),
@@ -115,7 +115,8 @@ for (const width of [390, 768])
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     await start(page, "Сервис и свободный проход", false);
-    await page.getByRole("button", { name: "Завершить", exact: true }).click();
+    page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Прервать смену", exact: true }).click();
     await page
       .locator(".practice-cards article")
       .filter({ hasText: "Что сделать в первую очередь" })
@@ -153,7 +154,8 @@ for (const width of [390, 768])
 test("неверное обещание → объяснение → повтор упражнения", async ({ page }) => {
   await page.goto("/");
   await start(page, "Сервис и свободный проход", false);
-  await page.getByRole("button", { name: "Завершить", exact: true }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Прервать смену", exact: true }).click();
   await page
     .locator(".practice-cards article")
     .filter({ hasText: "Помочь без лишних обещаний" })
@@ -269,7 +271,7 @@ test("TC007 пауза 10 секунд и возвращение после за
   context,
 }) => {
   await page.goto("/");
-  await start(page, "Похожая вещь", false);
+  await start(page, "Багаж без владельца", false);
   await page.getByRole("button", { name: "Пауза", exact: true }).click();
   await expect(page.getByText("Смена приостановлена")).toBeVisible();
   const before = await page.locator(".timer b").innerText();
@@ -277,7 +279,8 @@ test("TC007 пауза 10 секунд и возвращение после за
   await page.reload();
   await expect(page.getByText("Смена приостановлена")).toBeVisible();
   expect(await page.locator(".timer b").innerText()).toEqual(before);
-  await page.getByRole("button", { name: "Завершить", exact: true }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Прервать смену", exact: true }).click();
   await start(page);
   await expect(
     page.getByRole("button", { name: "Пауза", exact: true }),
@@ -289,7 +292,7 @@ test("TC007 пауза 10 секунд и возвращение после за
   await returned.getByRole("button", { name: "Прогресс", exact: true }).click();
   await returned
     .locator(".history")
-    .filter({ hasText: "Похожая вещь" })
+    .filter({ hasText: "Багаж без владельца" })
     .filter({ hasText: "Проверка" })
     .click();
   await expect(

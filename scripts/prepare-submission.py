@@ -44,7 +44,7 @@ def main() -> None:
     answers = "\n\n".join(label + "\n\n" + value for label, value in zip(labels, fields.values()))
     (OUTPUT / "01_Ответы_для_формы.txt").write_text(answers + "\n", encoding="utf-8-sig")
     (OUTPUT / "00_Начните_здесь.txt").write_text(
-        "ВИРТУАЛЬНАЯ СМЕНА ВСМ\nКомплект для сдачи, 26 сентября 2026 года\n\n"
+        "ВИРТУАЛЬНАЯ СМЕНА ВСМ\nКомплект для сдачи, обновлён 27 сентября 2026 года\n\n"
         f"Версия кода: {revision}\n"
         "Сайт: https://185.173.147.205/\n"
         "Репозиторий: https://github.com/proger89/test123334\n"

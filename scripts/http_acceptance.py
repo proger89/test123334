@@ -79,7 +79,7 @@ def session_run(_):
     session=Session();timings=[]
     for repeat in range(3):
         attempt=session.start()
-        for action in ['warn','notify','complete']:
+        for action in ['warn', 'notify']:
             code,attempt,elapsed=session.action(attempt,action);assert code==200,(code,attempt)
             timings.append(elapsed)
     return timings

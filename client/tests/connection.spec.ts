@@ -58,7 +58,7 @@ test("смена сохраняет серверный срок после об�
   await page.goto("/");
   await page
     .locator(".scenario-list article")
-    .filter({ hasText: "Похожая вещь" })
+    .filter({ hasText: "Багаж без владельца" })
     .getByRole("button")
     .click();
   await page.getByRole("button", { name: "Проверка", exact: true }).click();
@@ -99,7 +99,7 @@ test("после обновления токена отклонённое дей
   });
   await page
     .locator(".scenario-list article")
-    .filter({ hasText: "Похожая вещь" })
+    .filter({ hasText: "Багаж без владельца" })
     .getByRole("button")
     .click();
   await page.getByRole("button", { name: "Начать смену", exact: true }).click();

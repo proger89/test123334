@@ -6,6 +6,22 @@ namespace App\Game;
 
 final class Engine
 {
+    /** Finish the built-in full shift using its existing, validated closing action. */
+    public function completeReadyBuiltInAttempt(AttemptState $state, Scenario $scenario, float $time): void
+    {
+        if ($state->scenario !== 'security' || $state->version !== '1'
+            || $state->practice !== null || $state->status !== AttemptStatus::Active || $state->critical) {
+            return;
+        }
+        $step = $scenario->nodes[$state->threads['security'] ?? ''] ?? null;
+        foreach ($step?->actions ?? [] as $action) {
+            if ($action->id === 'complete' && $scenario->allowed($state, $action)) {
+                $this->act($state, $scenario, 'security', 'complete', $time);
+                return;
+            }
+        }
+    }
+
     public function execute(AttemptState $s, Scenario $scenario, AttemptCommand $command, float $time): void
     {
         if ($command->revision !== $s->revision) {

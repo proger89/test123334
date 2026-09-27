@@ -1,3 +1,6 @@
+export const scenarioTitle = (id: string, version: string, title: string) =>
+  id === "security" && version === "1" ? "Багаж без владельца" : title;
+
 export type Scenario = {
   id: string;
   title: string;

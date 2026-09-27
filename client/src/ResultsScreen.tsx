@@ -2,6 +2,7 @@ import { competencyName } from "./ProgressDetails";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import type { Attempt, Result } from "./api";
 import { PracticeOptions } from "./PracticeScreen";
+import { useEffect, useState } from "react";
 
 type Props = {
   attempt: Attempt;
@@ -22,9 +23,24 @@ export function ResultsScreen({
   openProgress,
   openScenarios,
 }: Props) {
+  const [showClosure, setShowClosure] = useState(
+    attempt.scenario === "security" && attempt.version === "1" && result.passed,
+  );
+  useEffect(() => {
+    const timer = setTimeout(() => setShowClosure(false), 2000);
+    return () => clearTimeout(timer);
+  }, [attempt.id]);
   const criteria = Object.entries(result.rubric);
   const completed = criteria.filter(([id]) => result.checks[id]);
   const remaining = criteria.filter(([id]) => !result.checks[id]);
+  if (showClosure)
+    return (
+      <section className="results" role="status">
+        <h1>Обращение завершено</h1>
+        <p>{attempt.last_decision?.explanation}</p>
+        <p>Результат сохранён. Открываем разбор…</p>
+      </section>
+    );
   return (
     <section className="results shift-results">
       <p className="eyebrow">

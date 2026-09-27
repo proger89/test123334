@@ -4,7 +4,8 @@ import { test, expect, Page } from '@playwright/test';
 
 async function start(page: Page, title: string, check = false) {
   await page.getByRole('button', { name: 'Сценарии', exact: true }).click();
-  await page.locator('article').filter({ hasText: title }).getByRole('button').click();
+  const displayedTitle = title === 'Багаж без владельца' ? /Багаж без владельца|Похожая вещь/ : title;
+  await page.locator('.scenario-list article').filter({ hasText: displayedTitle }).getByRole('button').click();
   if (check) await page.getByRole('button', { name: 'Проверка', exact: true }).click();
   await page.getByRole('button', { name: 'Начать смену', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Ваше действие' })).toBeVisible();
@@ -12,7 +13,17 @@ async function start(page: Page, title: string, check = false) {
 async function security(page: Page) {
   await page.getByRole('button', { name: /Не трогать вещь/ }).click();
   await page.getByRole('button', { name: /По связи сообщить начальнику поезда и транспортной/ }).click();
-  await page.getByRole('button', { name: /Завершить обращение/ }).click();
+  const passed = page.getByRole('heading', { name: 'Смена пройдена', exact: true });
+  const finish = page.getByRole('button', { name: 'Завершить обращение.', exact: true });
+  const finishExtraStep = page.getByRole('button', { name: 'Завершить учебную ситуацию.', exact: true });
+  // Editor tests publish a training version with its own explicit closing steps.
+  await expect(passed.or(finish)).toBeVisible();
+  if (await finish.isVisible()) {
+    await finish.click();
+    await expect(passed.or(finishExtraStep)).toBeVisible();
+    if (await finishExtraStep.isVisible()) await finishExtraStep.click();
+  }
+  await expect(passed).toBeVisible();
   await expect(page.getByText('100/100', {exact:true})).toBeVisible();
 }
 
@@ -40,7 +51,7 @@ test('две смены, сохранение, испытание, достиж�
   await expect(page.locator('a[href*="situations.pdf"]')).toHaveCount(8);
   await page.getByRole('button',{name:'Мой прогресс',exact:true}).click();
   await expect(page.getByText('Верный приоритет',{exact:true})).toBeVisible();
-  await start(page,'Похожая вещь',true);
+  await start(page,'Багаж без владельца',true);
   await security(page);
   await page.getByRole('button',{name:'Мой прогресс',exact:true}).click();
   await expect(page.locator('.achievement.earned').getByText('Две ситуации — два решения',{exact:true})).toBeVisible();
@@ -55,13 +66,13 @@ test('две смены, сохранение, испытание, достиж�
 
 test('критическая ошибка, обучение, правильная проверка',async({page})=>{
   await page.goto('/');
-  await start(page,'Похожая вещь',true);
+  await start(page,'Багаж без владельца',true);
   await page.getByRole('button',{name:/Перенести вещь/}).click();
   await expect(page.getByText('Критическая ошибка',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Повторить обучение'}).click();
   await page.getByRole('button',{name:'Начать смену',exact:true}).click();
   await security(page);
-  await start(page,'Похожая вещь',true);
+  await start(page,'Багаж без владельца',true);
   await security(page);
 });
 
@@ -83,6 +94,7 @@ test('сравнение с макетом и клавиатура',async({page}
   await page.goto('/');
   await page.locator('article').filter({hasText:'Сервис и свободный проход'}).getByRole('button').click();
   await expect(page.getByRole('button',{name:'Назад',exact:true})).toBeFocused();
+  await expect(page.getByRole('button',{name:'Начать смену',exact:true})).toBeEnabled();
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('button',{name:'Начать смену',exact:true})).toBeFocused();
   await page.keyboard.press('Escape');

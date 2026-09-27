@@ -41,10 +41,6 @@ export function GameScreen({
   setHint,
   seconds,
 }: Props) {
-  const readyForReview =
-    attempt.scenario === "security" &&
-    attempt.version === "1" &&
-    current?.actions.some((a) => a.id === "complete");
   return (
     <div className="game">
       <section className="dialogue">
@@ -69,15 +65,7 @@ export function GameScreen({
             <p>{current?.text}</p>
           </div>
         </div>
-        <h2>
-          {readyForReview ? "Обязательные действия выполнены" : "Ваше действие"}
-        </h2>
-        {readyForReview && (
-          <p>
-            Пассажиры предупреждены, информация передана ответственным.
-            Завершите обращение, чтобы сохранить итог и перейти к разбору.
-          </p>
-        )}
+        <h2>Ваше действие</h2>
         {attempt.status === "paused" ? (
           <div className="paused">
             <Pause />
@@ -102,9 +90,7 @@ export function GameScreen({
                   })
                 }
               >
-                {readyForReview && a.id === "complete"
-                  ? "Завершить обращение и открыть разбор"
-                  : a.label}
+                {a.label}
                 <ChevronRight size={20} />
               </button>
             ))}
@@ -164,7 +150,7 @@ export function GameScreen({
             onClick={() => command("finish")}
           >
             <LogOut size={18} />
-            Завершить
+            Прервать смену
           </button>
         </div>
       </section>

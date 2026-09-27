@@ -63,7 +63,7 @@ https://github.com/proger89/test123334/blob/main/docs/user-flow.md
 В самой игре ИИ не используется: последствия решений и оценки заданы правилами. В дальнейшем ИИ может помогать готовить черновики реплик, которые проверяет методист.
 
 Отчёт по присланным проверкам:
-https://github.com/proger89/test123334/blob/main/docs/qa-feedback-2026-09-26.md
+https://github.com/proger89/test123334/blob/main/docs/clarifications-2026-09-27.md
 
 Как использовался ИИ при разработке:
 https://github.com/proger89/test123334/blob/main/AI_USAGE.md

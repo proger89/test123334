@@ -144,7 +144,9 @@ final class AttemptService
             $row = StoredAttempt::fromRow($row);
             $s = $row->state;
             $scenario = $this->scenarioFor($s);
-            $this->engine->expire($s, $scenario, $this->clock());
+            $time = $this->clock();
+            $this->engine->expire($s, $scenario, $time);
+            $this->engine->completeReadyBuiltInAttempt($s, $scenario, $time);
             $this->persist($row, $s, $scenario);
 
             return $this->view($id, $s, $scenario);
@@ -170,10 +172,12 @@ final class AttemptService
             $scenario = $this->scenarioFor($s);
             $time = $this->clock();
             $this->engine->expire($s, $scenario, $time);
+            $this->engine->completeReadyBuiltInAttempt($s, $scenario, $time);
             $status = 200;
             $error = null;
             try {
                 $this->engine->execute($s, $scenario, $command, $time);
+                $this->engine->completeReadyBuiltInAttempt($s, $scenario, $time);
             } catch (\DomainException $e) {
                 $status = 409;
                 $error = ['code' => 'state_conflict', 'message' => $e->getMessage()];
