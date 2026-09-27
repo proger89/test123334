@@ -18,6 +18,28 @@ const exercise = (page: Page, title: string) =>
     .filter({ hasText: title })
     .getByRole("button");
 
+async function completeServiceCheck(page: Page, tone: "polite" | "rude") {
+  await page.goto("/");
+  await page.locator(".scenario-list article")
+    .filter({ hasText: "Сервис и свободный проход" })
+    .getByRole("button").click();
+  await page.getByRole("button", { name: "Проверка", exact: true }).click();
+  await page.getByRole("button", { name: "Начать смену", exact: true }).click();
+  await page.getByRole("button", { name: /Прошу прощения за неудобство/ }).click();
+  await page.getByRole("button", { name: /Проверить доступные места/ }).click();
+  await page.getByRole("button", { name: /Предложить свободное место/ }).click();
+  await page.getByRole("button", { name: "Сообщить начальнику поезда и инженеру.", exact: true }).click();
+  await page.getByRole("button", { name: /Вернуться к пассажиру с подтверждённой/ }).click();
+  await page.getByRole("button", { name: /Багаж в проходе/ }).waitFor({ timeout: 30000 });
+  await page.getByRole("button", { name: /Багаж в проходе/ }).click();
+  await page.getByRole("button", { name: /Спросить, кому принадлежит/ }).click();
+  const reply = tone === "polite"
+    ? /Пожалуйста, уберите чемодан/
+    : /Немедленно уберите свой чемодан/;
+  await page.getByRole("button", { name: reply }).click();
+  await expect(page.getByRole("heading", { name: "Смена пройдена" })).toBeVisible();
+}
+
 test("разбор второго сценария сразу открыт и объяснение не исчезает", async ({ page }) => {
   await page.goto("/");
   await page.locator(".scenario-list article")
@@ -38,26 +60,26 @@ test("разбор второго сценария сразу открыт и о
 });
 
 test("зачёт ниже ста очков даёт второй уровень", async ({ page }) => {
-  await page.goto("/");
-  await page.locator(".scenario-list article")
-    .filter({ hasText: "Сервис и свободный проход" })
-    .getByRole("button").click();
-  await page.getByRole("button", { name: "Проверка", exact: true }).click();
-  await page.getByRole("button", { name: "Начать смену", exact: true }).click();
-  await page.getByRole("button", { name: /Прошу прощения за неудобство/ }).click();
-  await page.getByRole("button", { name: /Проверить доступные места/ }).click();
-  await page.getByRole("button", { name: /Предложить свободное место/ }).click();
-  await page.getByRole("button", { name: "Сообщить начальнику поезда и инженеру.", exact: true }).click();
-  await page.getByRole("button", { name: /Вернуться к пассажиру с подтверждённой/ }).click();
-  await page.getByRole("button", { name: /Багаж в проходе/ }).waitFor({ timeout: 30000 });
-  await page.getByRole("button", { name: /Багаж в проходе/ }).click();
-  await page.getByRole("button", { name: /Спросить, кому принадлежит/ }).click();
-  await page.getByRole("button", { name: /Немедленно уберите свой чемодан/ }).click();
-  await expect(page.getByRole("heading", { name: "Смена пройдена" })).toBeVisible();
+  await completeServiceCheck(page, "rude");
   await expect(page.locator(".result-score")).toContainText("89/100");
+  await expect(page.locator(".ranked-result")).toContainText("Основные баллы: 89 · Уровень 2");
+  await expect(page.locator(".ranked-result")).toContainText("Лучший зачёт в этой ситуации: 89/100");
   await expect(page.locator(".result-evaluation")).toContainText("Лояльность 65/100");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Мой прогресс", exact: true }).click();
   await expect(page.locator(".stats > div").filter({ hasText: "Уровень" })).toContainText("2");
+  await expect(page.locator(".level-help")).toContainText("50–99 — второй");
+});
+
+test("слабый повтор не уменьшает прежние сто баллов", async ({ page }) => {
+  await completeServiceCheck(page, "polite");
+  await expect(page.locator(".ranked-result")).toContainText("Основные баллы: 100 · Уровень 3");
+  await completeServiceCheck(page, "rude");
+  await expect(page.locator(".result-score")).toContainText("89/100");
+  await expect(page.locator(".ranked-result")).toContainText("Основные баллы: 100 · Уровень 3");
+  await expect(page.locator(".ranked-result")).toContainText("Лучший зачёт в этой ситуации: 100/100");
+  await expect(page.locator(".ranked-result")).toContainText("уже полученные баллы не уменьшились");
 });
 
 for (const width of [390, 1366]) {

@@ -522,6 +522,7 @@ function App() {
             <ResultsScreen
               attempt={attempt}
               result={attempt.result}
+              progress={progress}
               busy={busy}
               startPractice={(id) => startPractice(attempt.id, id)}
               repeat={() => {
@@ -546,6 +547,12 @@ function App() {
                   <strong>{progress.level}</strong>Уровень
                 </div>
               </div>
+              <p className="level-help">
+                Уровень зависит только от основных баллов: 0–49 — первый,
+                50–99 — второй, 100–199 — третий, от 200 — четвёртый.
+                Суммируются лучшие зачтённые результаты двух ситуаций; более
+                слабый повтор не уменьшает счёт.
+              </p>
               <Achievements progress={progress} openAttempt={openAttempt} />
               <article className="challenge">
                 <h2>Две ситуации — два решения</h2>

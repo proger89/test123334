@@ -64,6 +64,7 @@ export type PracticeRecommendation = {
   before: string[];
 };
 export type Progress = {
+  best: { scenario: string; score: number }[];
   practice_focus: {
     label: string;
     scenario: string;

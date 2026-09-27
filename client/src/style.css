@@ -702,6 +702,22 @@ progress::-webkit-progress-value {
   font-size: 14px;
   margin: 4px 0 0;
 }
+.ranked-result {
+  border: 1px solid #d2dfef;
+  border-radius: 12px;
+  background: #f3f8ff;
+  padding: 14px 18px;
+  margin-top: 18px;
+}
+.ranked-result p {
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+.level-help {
+  color: #53647e;
+  line-height: 1.5;
+  margin: 16px 0 24px;
+}
 .critical-result {
   color: #b42332;
   font-weight: 600;

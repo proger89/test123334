@@ -1,11 +1,12 @@
 import { competencyName } from "./ProgressDetails";
 import { AlertTriangle, CheckCircle } from "lucide-react";
-import type { Attempt, Result } from "./api";
+import type { Attempt, Progress, Result } from "./api";
 import { PracticeOptions } from "./PracticeScreen";
 
 type Props = {
   attempt: Attempt;
   result: Result;
+  progress: Progress | null;
   busy: boolean;
   startPractice: (exercise: string) => void;
   repeat: () => void;
@@ -16,6 +17,7 @@ type Props = {
 export function ResultsScreen({
   attempt,
   result,
+  progress,
   busy,
   startPractice,
   repeat,
@@ -25,6 +27,9 @@ export function ResultsScreen({
   const criteria = Object.entries(result.rubric);
   const completed = criteria.filter(([id]) => result.checks[id]);
   const remaining = criteria.filter(([id]) => !result.checks[id]);
+  const bestScore = progress?.best.find(
+    (best) => best.scenario === attempt.scenario,
+  )?.score;
   return (
     <section className="results shift-results">
       <p className="eyebrow">
@@ -59,8 +64,26 @@ export function ResultsScreen({
       <p className="result-caption">
         {attempt.mode === "train"
           ? "Учебная попытка. Баллы в рейтинг не начисляются."
-          : "В рейтинг входит лучший зачтённый результат этой смены."}
+          : result.passed
+            ? "В рейтинг входит лучший зачтённый результат этой смены."
+            : "Незачёт не добавляет основных баллов."}
       </p>
+      {attempt.mode === "check" &&
+        result.passed &&
+        progress &&
+        bestScore !== undefined &&
+        bestScore >= result.score && (
+          <div className="ranked-result" role="status">
+            <strong>
+              Основные баллы: {progress.permanent} · Уровень {progress.level}
+            </strong>
+            <p>
+              Лучший зачёт в этой ситуации: {bestScore}/100.
+              {bestScore > result.score &&
+                ` Эта попытка набрала ${result.score}/100, поэтому уже полученные баллы не уменьшились.`}
+            </p>
+          </div>
+        )}
 
       <div className="result-review">
         <section
