@@ -51,6 +51,9 @@ final class EditorTest extends TestCase
 
     public function test_access_requires_code_expires_and_cannot_read_other_profiles(): void
     {
+        $this->getJson('/api/v1/editor/example')->assertOk()
+            ->assertJsonPath('id', 'service')
+            ->assertJsonStructure(['title', 'intro', 'seconds', 'nodes']);
         $this->getJson('/api/v1/editor')->assertForbidden();
         $this->postJson('/api/v1/editor/login', ['code' => 'wrong'])->assertForbidden();
         $this->login();

@@ -1552,6 +1552,30 @@
         ]
       }
     },
+    "/editor/example": {
+      "get": {
+        "summary": "Посмотреть опубликованный пример сценария без кода методиста",
+        "responses": {
+          "200": {
+            "description": "Содержание исходной опубликованной смены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft/properties/definition"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Исходная версия не найдена"
+          },
+          "429": {
+            "description": "Слишком много запросов"
+          }
+        },
+        "security": []
+      }
+    },
     "/editor/login": {
       "post": {
         "summary": "Открыть доступ методиста на 8 часов",

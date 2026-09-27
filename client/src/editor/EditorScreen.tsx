@@ -3,6 +3,7 @@ import { api } from "../api";
 import { requestId } from "../requestId";
 import { ActionForm } from "./ActionForm";
 import { PreviewScreen } from "./PreviewScreen";
+import { PublicEditorExample } from "./PublicEditorExample";
 import {
   newAction,
   threadLabels,
@@ -21,6 +22,8 @@ export function EditorScreen({
 }) {
   const [authorized, setAuthorized] = useState<boolean | null>(null),
     [code, setCode] = useState(""),
+    [example, setExample] = useState<Definition | null>(null),
+    [exampleError, setExampleError] = useState(false),
     [library, setLibrary] = useState<Library>({ versions: [], drafts: [] }),
     [base, setBase] = useState(""),
     [draft, setDraft] = useState<Draft | null>(null),
@@ -78,6 +81,12 @@ export function EditorScreen({
       if (status.authorized) await refresh();
     });
   }, []);
+  useEffect(() => {
+    if (authorized !== false) return;
+    void api<Definition>("/editor/example")
+      .then(setExample)
+      .catch(() => setExampleError(true));
+  }, [authorized]);
   function accept(value: Draft) {
     setDraft(value);
     setDefinition(value.definition);
@@ -143,10 +152,23 @@ export function EditorScreen({
         <p className="eyebrow">Для автора обучения</p>
         <h1>Редактор сценариев</h1>
         <p>
-          Здесь можно изменить реплики и ветки смены, попробовать их и
-          опубликовать новую версию для обучения.
+          Посмотрите, как устроен сценарий. Для изменения и публикации нужен код методиста.
         </p>
+        <button
+          type="button"
+          onClick={() => document.getElementById("editor-login")?.scrollIntoView()}
+        >
+          Войти для изменения
+        </button>
+        {example ? (
+          <PublicEditorExample definition={example} />
+        ) : exampleError ? (
+          <p role="alert">Пример пока не загрузился. Сценарии по-прежнему доступны в разделе «Сценарии».</p>
+        ) : (
+          <p role="status">Загружаем пример…</p>
+        )}
         <form
+          id="editor-login"
           className="editor-card editor-login"
           onSubmit={(e) => {
             e.preventDefault();

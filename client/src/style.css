@@ -718,6 +718,12 @@ progress::-webkit-progress-value {
   line-height: 1.5;
   margin: 16px 0 24px;
 }
+.level-meaning {
+  display: block;
+  color: #53647e;
+  line-height: 1.4;
+  margin-top: 8px;
+}
 .critical-result {
   color: #b42332;
   font-weight: 600;

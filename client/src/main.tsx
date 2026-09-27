@@ -545,6 +545,14 @@ function App() {
                 </div>
                 <div>
                   <strong>{progress.level}</strong>Уровень
+                  <small className="level-meaning">
+                    {[
+                      "Пока нет зачтённой проверки",
+                      "Есть зачёт, пока меньше 100 баллов",
+                      "Набрано от 100 до 199 баллов",
+                      "Набрано 200 баллов за две ситуации",
+                    ][progress.level - 1]}
+                  </small>
                 </div>
               </div>
               <p className="level-help">

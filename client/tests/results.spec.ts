@@ -49,6 +49,13 @@ async function expectProgress(page: Page, points: number, level: number) {
     .toHaveText("0");
   await expect(stats.filter({ hasText: "Уровень" }).locator("strong"))
     .toHaveText(String(level));
+  await expect(stats.filter({ hasText: "Уровень" }).locator("small"))
+    .toHaveText([
+      "Пока нет зачтённой проверки",
+      "Есть зачёт, пока меньше 100 баллов",
+      "Набрано от 100 до 199 баллов",
+      "Набрано 200 баллов за две ситуации",
+    ][level - 1]);
 }
 
 test("разбор второго сценария сразу открыт и объяснение не исчезает", async ({ page }) => {

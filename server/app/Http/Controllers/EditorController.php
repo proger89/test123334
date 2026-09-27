@@ -23,6 +23,14 @@ final class EditorController extends Controller
         return ['authorized' => $this->access->authorized($request)];
     }
 
+    public function example(): JsonResponse
+    {
+        $definition = DB::table('scenario_versions')->where('scenario', 'service')->where('version', '1')->value('definition');
+        abort_unless($definition, 404);
+
+        return response()->json(json_decode($definition, flags: JSON_THROW_ON_ERROR));
+    }
+
     public function login(Request $request): array
     {
         $input = $request->validate(['code' => 'required|string|max:128']);

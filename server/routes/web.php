@@ -14,6 +14,7 @@ Route::get('/api/health/ready', function () {
 Route::get('/api/v1/integrations/results', [T::class, 'export']);
 Route::prefix('/api/v1')->middleware('throttle:trainer')->group(function () {
     Route::get('/editor/access', [E::class, 'status']);
+    Route::get('/editor/example', [E::class, 'example']);
     Route::post('/editor/login', [E::class, 'login'])->middleware('throttle:5,1')->block();
     Route::post('/editor/logout', [E::class, 'logout'])->block();
     Route::get('/editor', [E::class, 'index']);

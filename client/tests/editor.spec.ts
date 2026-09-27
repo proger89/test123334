@@ -25,6 +25,25 @@ async function editor(page: Page) {
     page.getByRole("textbox", { name: "Текст ситуации", exact: true }),
   ).toBeVisible();
 }
+test("пример редактора открыт жюри без кода, изменение закрыто", async ({ page }) => {
+  await page.goto("/#editor");
+  await expect(page.getByRole("region", { name: "Пример редактора" })).toBeVisible();
+  await expect(page.getByText("Только просмотр")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Варианты действий и объяснения" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Шаги примера" }).getByRole("button").nth(1).click();
+  await expect(page.getByRole("navigation", { name: "Шаги примера" }).getByRole("button").nth(1)).toHaveAttribute("aria-current", "step");
+  await expect(page.getByRole("heading", { name: "Вход для методиста" })).toBeVisible();
+  await page.getByRole("button", { name: "Войти для изменения" }).click();
+  await expect(page.getByLabel("Код доступа")).toBeInViewport();
+  await expect(page.getByRole("button", { name: "Опубликовать", exact: true })).toHaveCount(0);
+  const session = await page.request.get("/api/v1/session");
+  const { csrf } = await session.json();
+  const response = await page.request.post("/api/v1/editor/drafts", {
+    headers: { "X-CSRF-TOKEN": csrf },
+    data: { request_id: "00000000-0000-4000-8000-000000000001", scenario: "security", version: "1" },
+  });
+  expect(response.status()).toBe(403);
+});
 test("редактор: новая ветка → сохранение → проба → публикация → обучение", async ({
   page,
 }) => {
