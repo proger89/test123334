@@ -218,6 +218,31 @@ final class TrainerTest extends TestCase
         self::assertSame(0, app(Progress::class)->summary($this->profile)['bonus']);
     }
 
+    public function test_leaderboard_orders_equal_totals_by_permanent_points_and_shows_active_bonus(): void
+    {
+        DB::table('profiles')->where('id', $this->profile)->update(['brigade' => 'Проверка рейтинга']);
+        $ids = [
+            '00000000-0000-4000-8000-0000000000a1',
+            '00000000-0000-4000-8000-0000000000b1',
+            '00000000-0000-4000-8000-0000000000c1',
+        ];
+        foreach ($ids as $id) {
+            DB::table('profiles')->insert(['id' => $id, 'name' => 'Участник', 'brigade' => 'Проверка рейтинга', 'depot' => 'Москва', 'created_at' => now(), 'updated_at' => now()]);
+        }
+        foreach ([$ids[0] => 80, $ids[1] => 100, $ids[2] => 100] as $id => $score) {
+            DB::table('best_results')->insert(['profile_id' => $id, 'scenario' => 'security', 'score' => $score]);
+        }
+        DB::table('bonuses')->insert(['profile_id' => $ids[0], 'source' => 'test', 'points' => 20, 'expires_at' => now()->addHour()]);
+        $rows = $this->withSession(['profile_id' => $this->profile])->getJson('/api/v1/leaderboard?scope=brigade')->assertOk()->json();
+        self::assertSame([$ids[1], $ids[2], $ids[0], $this->profile], array_column($rows, 'id'));
+        self::assertSame([1, 1, 3, 4], array_column($rows, 'rank'));
+        self::assertSame(80, $rows[2]['permanent']);
+        self::assertSame(100, $rows[2]['total']);
+        DB::table('bonuses')->where('profile_id', $ids[0])->update(['expires_at' => now()->subSecond()]);
+        $expired = $this->getJson('/api/v1/leaderboard?scope=brigade')->assertOk()->json();
+        self::assertSame(80, $expired[2]['total']);
+    }
+
     public function test_one_open_attempt_per_profile(): void
     {
         $one = $this->start();

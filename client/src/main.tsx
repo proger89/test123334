@@ -787,7 +787,12 @@ function App() {
                         {r.demo ? " · Пример" : ""}
                       </small>
                     </span>
-                    <strong>{r.total}</strong>
+                    <span className="rank-points">
+                      <strong>Итого: {r.total}</strong>
+                      <small>
+                        Основные: {r.permanent} · Временные: {r.total - r.permanent}
+                      </small>
+                    </span>
                   </div>
                 ))}
               </div>

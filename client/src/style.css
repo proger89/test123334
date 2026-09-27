@@ -849,6 +849,16 @@ summary:focus-visible {
 .rank-list > div > span {
   flex: 1;
 }
+.rank-list .rank-points {
+  flex: 0 0 auto;
+  text-align: right;
+}
+.rank-points strong,
+.rank-points small { display: block; }
+@media(max-width:600px) {
+  .rank-list > div { gap: 10px; padding: 16px 8px; }
+  .rank-list .rank-points { max-width: 42%; }
+}
 .rank-list .self {
   background: #eaf3ff;
 }

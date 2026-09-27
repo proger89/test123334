@@ -59,8 +59,12 @@ test('две смены, сохранение, испытание, достиж�
   await page.getByRole('button',{name:'Рейтинг',exact:true}).click();
   for (const scope of ['Моя бригада','Моё депо','Компания']) {
     await page.getByRole('button',{name:scope,exact:true}).click();
-    await expect(page.locator('.rank-list .self')).toContainText('220');
+    await expect(page.locator('.rank-list .self')).toContainText('Итого: 220');
+    await expect(page.locator('.rank-list .self')).toContainText('Основные: 200 · Временные: 20');
   }
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('.rank-list .self')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
 

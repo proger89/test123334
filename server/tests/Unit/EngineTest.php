@@ -150,6 +150,26 @@ final class EngineTest extends TestCase
         self::assertSame(50, $s->safety);
     }
 
+    public function test_deadline_expires_at_the_exact_boundary_once(): void
+    {
+        $scenario = $this->scenario('security');
+        $state = $scenario->initialState('check', true, 100);
+        $deadline = $state->deadline;
+        self::assertNotNull($deadline);
+
+        $engine = new Engine;
+        $engine->expire($state, $scenario, $deadline - 0.001);
+        self::assertFalse($state->timedOut);
+
+        $engine->expire($state, $scenario, $deadline);
+        self::assertTrue($state->timedOut);
+        self::assertSame('completed', $state->status->value);
+        $safety = $state->safety;
+
+        $engine->expire($state, $scenario, $deadline + 1);
+        self::assertSame($safety, $state->safety);
+    }
+
     public function test_moving_unknown_bag_is_critical(): void
     {
         $d = $this->scenario('security');
