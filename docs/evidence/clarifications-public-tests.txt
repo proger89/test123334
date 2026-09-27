@@ -1,0 +1,18 @@
+
+Running 10 tests using 1 worker
+
+(node:34856) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 client\tests\clarifications.spec.ts:3:1 › профиль получает новый результат из другой вкладки (8.0s)
+  ok  2 client\tests\clarifications.spec.ts:46:1 › новая сборка предлагается без автоматической перезагрузки (31.6s)
+  ok  3 client\tests\clarifications.spec.ts:62:1 › главная страница перепроверяется, отсутствующий файл не возвращает HTML (726ms)
+  ok  4 client\tests\clarifications.spec.ts:73:1 › обновление не прерывает начатую смену (34.2s)
+  ok  5 client\tests\https.spec.ts:3:1 › HTTPS: доверенный сертификат, переход с HTTP и сохранение профиля (2.6s)
+  ok  6 client\tests\qa-feedback.spec.ts:14:1 › новый результат не скрыт старой ошибкой, достижения и профиль (11.3s)
+  -   7 client\tests\qa-feedback.spec.ts:61:1 › реальные 90 секунд: предупреждение, истечение и рейтинг
+  ok  8 client\tests\results.spec.ts:22:3 › понятный разбор и заметное завершение на ширине 390 (3.0s)
+  ok  9 client\tests\results.spec.ts:22:3 › понятный разбор и заметное завершение на ширине 1366 (2.9s)
+  ok 10 client\tests\results.spec.ts:75:1 › незавершённое упражнение: видимое объяснение и возврат к сохранённой попытке (7.6s)
+
+  1 skipped
+  9 passed (1.7m)
