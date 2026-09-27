@@ -40,6 +40,17 @@ async function completeServiceCheck(page: Page, tone: "polite" | "rude") {
   await expect(page.getByRole("heading", { name: "Смена пройдена" })).toBeVisible();
 }
 
+async function expectProgress(page: Page, points: number, level: number) {
+  await page.getByRole("button", { name: "Прогресс", exact: true }).click();
+  const stats = page.locator(".stats > div");
+  await expect(stats.filter({ hasText: "Основные баллы" }).locator("strong"))
+    .toHaveText(String(points));
+  await expect(stats.filter({ hasText: "Временные баллы" }).locator("strong"))
+    .toHaveText("0");
+  await expect(stats.filter({ hasText: "Уровень" }).locator("strong"))
+    .toHaveText(String(level));
+}
+
 test("разбор второго сценария сразу открыт и объяснение не исчезает", async ({ page }) => {
   await page.goto("/");
   await page.locator(".scenario-list article")
@@ -59,7 +70,9 @@ test("разбор второго сценария сразу открыт и о
   await expect(page.locator(".result-evaluation")).toContainText("Общение с пассажиром");
 });
 
-test("зачёт ниже ста очков даёт второй уровень", async ({ page }) => {
+test("TC009f: четыре уровня на одном профиле — 0, 89, 100, 200", async ({ page }) => {
+  await page.goto("/");
+  await expectProgress(page, 0, 1);
   await completeServiceCheck(page, "rude");
   await expect(page.locator(".result-score")).toContainText("89/100");
   await expect(page.locator(".ranked-result")).toContainText("Основные баллы: 89 · Уровень 2");
@@ -67,9 +80,25 @@ test("зачёт ниже ста очков даёт второй уровень
   await expect(page.locator(".result-evaluation")).toContainText("Лояльность 65/100");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByRole("button", { name: "Мой прогресс", exact: true }).click();
-  await expect(page.locator(".stats > div").filter({ hasText: "Уровень" })).toContainText("2");
+  await expectProgress(page, 89, 2);
   await expect(page.locator(".level-help")).toContainText("50–99 — второй");
+
+  await completeServiceCheck(page, "polite");
+  await expect(page.locator(".result-score")).toContainText("100/100");
+  await expectProgress(page, 100, 3);
+
+  await page.goto("/");
+  await page.locator(".scenario-list article")
+    .filter({ hasText: "Багаж без владельца" })
+    .getByRole("button").click();
+  await page.getByRole("button", { name: "Проверка", exact: true }).click();
+  await page.getByRole("button", { name: "Начать смену", exact: true }).click();
+  await page.getByRole("button", { name: /Не трогать вещь/ }).click();
+  await page.getByRole("button", { name: /По связи сообщить начальнику поезда/ }).click();
+  await expect(page.locator(".result-score")).toContainText("100/100");
+  await expectProgress(page, 200, 4);
+  await page.reload();
+  await expectProgress(page, 200, 4);
 });
 
 test("слабый повтор не уменьшает прежние сто баллов", async ({ page }) => {
