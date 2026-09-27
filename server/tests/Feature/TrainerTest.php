@@ -325,12 +325,14 @@ final class TrainerTest extends TestCase
 
     public function test_best_scores_increase_only_by_difference(): void
     {
+        self::assertSame(1, app(Progress::class)->summary($this->profile)['level']);
         $state = app(ScenarioCatalog::class)->get('service')->initialState('check', true, 100);
         foreach ([78 => 78, 89 => 89] as $score => $expected) {
             $result = new AttemptResult($score, true, false, [], [], [], []);
             app(Progress::class)->record($this->profile, $state, $result);
             app(Progress::class)->record($this->profile, $state, $result);
             self::assertSame($expected, app(Progress::class)->summary($this->profile)['permanent']);
+            self::assertSame(2, app(Progress::class)->summary($this->profile)['level']);
         }
     }
 

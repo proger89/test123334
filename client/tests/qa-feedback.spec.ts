@@ -83,6 +83,9 @@ test("реальные 90 секунд: предупреждение, истеч
   await expect(
     page.getByRole("button", { name: /Срок 20 временных баллов истёк/ }),
   ).toBeVisible({ timeout: 75000 });
+  await expect(
+    page.getByRole("button", { name: /Скоро истекут 20 временных баллов/ }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Рейтинг", exact: true }).click();
   await expect(page.locator(".rank-list .self")).toContainText("0");
   await page.getByRole("button", { name: "Прогресс", exact: true }).click();

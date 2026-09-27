@@ -241,6 +241,16 @@ final class PracticeTest extends TestCase
         $notices = $this->getJson('/api/v1/notifications')->assertOk()->json();
         $kinds = array_unique(array_map(fn ($n) => explode(':', $n['event_key'])[0], $notices));
         self::assertCount(3, $kinds);
+        $scenarioNotice = collect($notices)->firstWhere('event_key', 'scenario:security:1');
+        self::assertSame('Доступен сценарий: Багаж без владельца', $scenarioNotice['title']);
+        DB::table('notifications')->where('id', $scenarioNotice['id'])
+            ->update(['title' => 'Доступен сценарий: Похожая вещь — другое решение', 'read' => true]);
+        $notices = $this->getJson('/api/v1/notifications')->assertOk()->json();
+        $renamed = collect($notices)->firstWhere('id', $scenarioNotice['id']);
+        self::assertSame('Доступен сценарий: Багаж без владельца', $renamed['title']);
+        self::assertTrue($renamed['read']);
+        $warning = collect($notices)->first(fn (array $notice): bool => str_starts_with($notice['event_key'], 'bonus:'));
+        self::assertStringStartsWith('Скоро истекут', $warning['title']);
         foreach ($notices as $notice) {
             self::assertNotEmpty($notice['body']);
             $this->patchJson('/api/v1/notifications/'.$notice['id'], [])->assertOk();
@@ -250,14 +260,54 @@ final class PracticeTest extends TestCase
         self::assertSame(20, $before['bonus']);
         DB::table('bonuses')->where('profile_id', $this->profile)->update(['expires_at' => now()->subSecond()]);
         $noticesAfter = $this->getJson('/api/v1/notifications')->assertOk()->json();
-        self::assertCount(count($notices), $noticesAfter);
+        self::assertCount(count($notices) + 1, $noticesAfter);
+        self::assertSame($warning['title'], collect($noticesAfter)->firstWhere('id', $warning['id'])['title']);
+        self::assertTrue(collect($noticesAfter)->firstWhere('id', $warning['id'])['read']);
         self::assertCount(1, array_filter($noticesAfter, fn ($n) => str_contains($n['title'], 'баллов истёк') && ! $n['read']));
+        self::assertCount(count($noticesAfter), $this->getJson('/api/v1/notifications')->assertOk()->json());
         $after = app(Progress::class)->summary($this->profile);
         self::assertSame(0, $after['bonus']);
         self::assertSame($before['permanent'], $after['permanent']);
         self::assertSame($before['level'], $after['level']);
         $rank = $this->getJson('/api/v1/leaderboard?scope=company')->assertOk()->json();
         self::assertSame(0, array_values(array_filter($rank, fn ($r) => $r['id'] === $this->profile))[0]['total']);
+    }
+
+    public function test_standard_bonus_warns_only_in_its_last_hour(): void
+    {
+        $id = DB::table('bonuses')->insertGetId([
+            'profile_id' => $this->profile, 'source' => 'hour-boundary',
+            'points' => 20, 'expires_at' => now()->addMinutes(61),
+        ]);
+        $key = 'bonus:'.$id;
+        self::assertNull(collect($this->getJson('/api/v1/notifications')->assertOk()->json())
+            ->firstWhere('event_key', $key));
+
+        DB::table('bonuses')->where('id', $id)->update(['expires_at' => now()->addMinutes(59)]);
+        $warning = collect($this->getJson('/api/v1/notifications')->assertOk()->json())
+            ->firstWhere('event_key', $key);
+        self::assertStringStartsWith('Скоро истекут', $warning['title']);
+        self::assertSame($warning['id'], collect($this->getJson('/api/v1/notifications')->assertOk()->json())
+            ->firstWhere('event_key', $key)['id']);
+    }
+
+    public function test_old_expiry_notice_is_not_duplicated_after_upgrade(): void
+    {
+        $id = DB::table('bonuses')->insertGetId([
+            'profile_id' => $this->profile, 'source' => 'old-expiry',
+            'points' => 20, 'expires_at' => now()->subSecond(),
+        ]);
+        DB::table('notifications')->insert([
+            'profile_id' => $this->profile, 'event_key' => 'bonus:'.$id,
+            'title' => 'Срок 20 временных баллов истёк', 'target' => 'progress',
+            'read' => true, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $notices = $this->getJson('/api/v1/notifications')->assertOk()->json();
+        self::assertCount(1, array_filter($notices, fn (array $notice): bool => in_array(
+            $notice['event_key'], ['bonus:'.$id, 'bonus_expired:'.$id], true
+        )));
+        self::assertNull(collect($notices)->firstWhere('event_key', 'bonus_expired:'.$id));
     }
 
     public function test_tc011_ranking_scopes_and_order(): void

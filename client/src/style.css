@@ -667,6 +667,36 @@ progress::-webkit-progress-value {
   margin-bottom: 12px;
   padding-bottom: 16px;
 }
+.completion-note,
+.result-evaluation {
+  border: 1px solid #d2dfef;
+  border-radius: 14px;
+  background: #f3f8ff;
+  padding: 18px 22px;
+  margin: 18px 0 24px;
+}
+.completion-note p,
+.result-evaluation p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+.result-evaluation h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.result-evaluation .competency-row {
+  margin: 16px 0;
+}
+.result-evaluation .competency-row p {
+  font-size: 17px;
+  margin-top: 8px;
+}
+.gauge-help {
+  color: #53647e;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 6px 2px 0;
+}
 .result-caption {
   color: #53647e;
   font-size: 14px;

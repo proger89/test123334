@@ -200,6 +200,10 @@ export function GameScreen({
         <h3>Показатели (текущие)</h3>
         <Gauge label="Лояльность" value={attempt.loyalty} kind="loyalty" />
         <Gauge label="Безопасность" value={attempt.safety} kind="safety" />
+        <p className="gauge-help">
+          Лояльность отражает реакцию пассажира. Оценка навыков зависит от
+          выполненных действий; безопасность должна быть не ниже 80 для зачёта.
+        </p>
         <p className="footnote">
           Учебная ситуация · время задано авторами тренажёра
         </p>

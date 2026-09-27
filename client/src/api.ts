@@ -21,7 +21,7 @@ export type Result = {
     loyalty: number;
     safety: number;
   }[];
-  competencies: Record<string, { percent: number | null; status: string }>;
+  competencies: Record<string, { passed: number; total: number; percent: number | null; status: string }>;
 };
 export type Attempt = {
   last_decision: {

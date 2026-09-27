@@ -18,6 +18,48 @@ const exercise = (page: Page, title: string) =>
     .filter({ hasText: title })
     .getByRole("button");
 
+test("разбор второго сценария сразу открыт и объяснение не исчезает", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".scenario-list article")
+    .filter({ hasText: "Багаж без владельца" })
+    .getByRole("button").click();
+  await page.getByRole("button", { name: "Начать смену", exact: true }).click();
+  await page.getByRole("button", { name: /Не трогать вещь/ }).click();
+  await page.getByRole("button", { name: /По связи сообщить начальнику поезда/ }).click();
+  await expect(page.getByRole("heading", { name: "Смена пройдена" })).toBeVisible();
+  const note = page.getByText("Обращение завершено автоматически.");
+  await expect(note).toBeVisible();
+  await page.waitForTimeout(2500);
+  await expect(note).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Как складывается результат" })).toBeVisible();
+  await expect(page.locator(".result-evaluation")).toContainText("Лояльность 65/100");
+  await expect(page.locator(".result-evaluation")).toContainText("Безопасность 100/100");
+  await expect(page.locator(".result-evaluation")).toContainText("Общение с пассажиром");
+});
+
+test("зачёт ниже ста очков даёт второй уровень", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".scenario-list article")
+    .filter({ hasText: "Сервис и свободный проход" })
+    .getByRole("button").click();
+  await page.getByRole("button", { name: "Проверка", exact: true }).click();
+  await page.getByRole("button", { name: "Начать смену", exact: true }).click();
+  await page.getByRole("button", { name: /Прошу прощения за неудобство/ }).click();
+  await page.getByRole("button", { name: /Проверить доступные места/ }).click();
+  await page.getByRole("button", { name: /Предложить свободное место/ }).click();
+  await page.getByRole("button", { name: "Сообщить начальнику поезда и инженеру.", exact: true }).click();
+  await page.getByRole("button", { name: /Вернуться к пассажиру с подтверждённой/ }).click();
+  await page.getByRole("button", { name: /Багаж в проходе/ }).waitFor({ timeout: 30000 });
+  await page.getByRole("button", { name: /Багаж в проходе/ }).click();
+  await page.getByRole("button", { name: /Спросить, кому принадлежит/ }).click();
+  await page.getByRole("button", { name: /Немедленно уберите свой чемодан/ }).click();
+  await expect(page.getByRole("heading", { name: "Смена пройдена" })).toBeVisible();
+  await expect(page.locator(".result-score")).toContainText("89/100");
+  await expect(page.locator(".result-evaluation")).toContainText("Лояльность 65/100");
+  await page.getByRole("button", { name: "Мой прогресс", exact: true }).click();
+  await expect(page.locator(".stats > div").filter({ hasText: "Уровень" })).toContainText("2");
+});
+
 for (const width of [390, 1366]) {
   test(`понятный разбор и заметное завершение на ширине ${width}`, async ({
     page,

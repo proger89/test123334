@@ -61,7 +61,14 @@ final class Progress
     public function syncNotifications(string $profile): void
     {
         foreach (DB::table('scenario_versions')->get() as $s) {
-            $this->notice($profile, 'scenario:'.$s->scenario.':'.$s->version, 'Доступен сценарий: '.json_decode($s->definition, true)['title'], 'scenarios');
+            $key = 'scenario:'.$s->scenario.':'.$s->version;
+            $contentTitle = json_decode($s->definition, true, flags: JSON_THROW_ON_ERROR)['title'];
+            $title = 'Доступен сценарий: '.($s->scenario === 'security' && $s->version === '1'
+                ? 'Багаж без владельца' : $contentTitle);
+            $this->notice($profile, $key, $title, 'scenarios');
+            // Existing profiles already have the old title. Keep their read state.
+            DB::table('notifications')->where('profile_id', $profile)->where('event_key', $key)
+                ->where('title', '!=', $title)->update(['title' => $title, 'updated_at' => now()]);
         }
         $this->notice($profile, 'challenge:both', 'Испытание «Две ситуации — два решения»', 'progress');
         foreach (DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '>', now())->get() as $b) {
@@ -70,11 +77,12 @@ final class Progress
             }
         }
         foreach (DB::table('bonuses')->where('profile_id', $profile)->where('expires_at', '<=', now())->get() as $bonus) {
-            $key = 'bonus:'.$bonus->id;
             $title = 'Срок '.$bonus->points.' временных баллов истёк';
-            $this->notice($profile, $key, $title, 'progress');
-            DB::table('notifications')->where('profile_id', $profile)->where('event_key', $key)
-                ->where('title', '!=', $title)->update(['title' => $title, 'read' => false, 'updated_at' => now()]);
+            $legacy = DB::table('notifications')->where('profile_id', $profile)
+                ->where('event_key', 'bonus:'.$bonus->id)->value('title');
+            if ($legacy !== $title) {
+                $this->notice($profile, 'bonus_expired:'.$bonus->id, $title, 'progress');
+            }
         }
     }
 
