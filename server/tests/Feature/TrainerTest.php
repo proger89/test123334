@@ -256,6 +256,26 @@ final class TrainerTest extends TestCase
         $this->withSession(['profile_id' => '00000000-0000-4000-8000-000000000001'])->getJson('/api/v1/attempts/'.$a['id'])->assertNotFound();
     }
 
+    public function test_equal_pseudonyms_do_not_merge_profiles_or_results(): void
+    {
+        $name = 'Проводник 42';
+        DB::table('profiles')->where('id', $this->profile)->update(['name' => $name]);
+        $completed = $this->complete();
+
+        $other = (string) Str::uuid();
+        DB::table('profiles')->insert([
+            'id' => $other, 'name' => $name, 'brigade' => 'Бригада №12',
+            'depot' => 'Москва', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->withSession(['profile_id' => $other])->getJson('/api/v1/me')->assertOk()
+            ->assertJsonPath('profile.id', $other)
+            ->assertJsonPath('profile.name', $name)
+            ->assertJsonPath('progress.permanent', 0);
+        $this->getJson('/api/v1/attempts/'.$completed['id'])->assertNotFound();
+        $this->withSession(['profile_id' => $this->profile])->getJson('/api/v1/me')->assertOk()
+            ->assertJsonPath('progress.permanent', 100);
+    }
+
     public function test_pause_preserves_hidden_event_and_is_idempotent(): void
     {
         $a = $this->start('service', 'train');
